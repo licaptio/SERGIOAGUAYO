@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>🩺 Gastos Médicos – XML Inge Sergio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- =========================================================
+       🧩 BLOQUE 1: FUENTES Y LIBRERÍAS
+       ========================================================= -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+  <!-- =========================================================
+       🎨 BLOQUE 2: ESTILOS GENERALES
+       ========================================================= -->
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to right, #00416A, #E4E5E6);
+      color: #111;
+      padding: 20px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #003366;
+      margin-bottom: 25px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    }
+
+    th, td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #ddd;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    th {
+      background: #003366;
+      color: #fff;
+      position: sticky;
+      top: 0;
+    }
+
+    tr:hover { background: #f3f7fb; }
+
+    .true { color: green; font-weight: 600; }
+    .false { color: red; font-weight: 600; }
+  </style>
+</head>
+
+<body>
+  <!-- =========================================================
+       🧾 BLOQUE 3: ENCABEZADO Y TABLA
+       ========================================================= -->
+  <h2>🩺 Gastos Médicos – XML Inge Sergio</h2>
+
+  <table id="tablaGastos">
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>RFC Emisor</th>
+        <th>Razón Social</th>
+        <th>Factura</th>
+        <th>Total</th>
+        <th>Conceptos Detalle</th>
+        <th>Fecha Certificación</th>
+        <th>Serie</th>
+        <th>Tipo</th>
+        <th>RFC Receptor</th>
+        <th>Nombre Receptor</th>
+        <th>Es Gasto Médico</th>
+        <th>Gasto Reclamado</th>
+        <th>Nota Reclamación</th>
+        <th>Especialidad</th>
+        <th>Fecha Reclamación</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <!-- =========================================================
+       ⚙️ BLOQUE 4: CONFIGURACIÓN DE SUPABASE
+       ========================================================= -->
+  <script type="module">
+    // 🔑 CONFIGURA AQUÍ TUS DATOS DE SUPABASE
+    const supabaseUrl = "https://cvpbtjlupswbyxenugpz.supabase.co"; // 👉 tu URL
+    const supabaseKey = "TU_API_KEY_PUBLICA"; // 👉 reemplaza con tu key pública
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    // =========================================================
+    // 📤 BLOQUE 5: CONSULTA A LA TABLA XML_INGE_SERGIO
+    // =========================================================
+    const { data, error } = await supabase
+      .from("xml_inge_sergio")
+      .select("*")
+      .eq("es_gasto_medico", true) // 🔎 filtro principal
+      .order("fecha", { ascending: false });
+
+    if (error) {
+      console.error("Error al consultar la tabla:", error);
+      alert("⚠️ Error al obtener los datos. Revisa la consola.");
+    } else {
+      // =========================================================
+      // 🧮 BLOQUE 6: CONSTRUCCIÓN DE TABLA
+      // =========================================================
+      const tbody = document.querySelector("#tablaGastos tbody");
+      tbody.innerHTML = "";
+
+      data.forEach(registro => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td>${registro.fecha ?? ''}</td>
+          <td>${registro.rfc_emisor ?? ''}</td>
+          <td>${registro.razon_social_emisor ?? ''}</td>
+          <td>${registro.factura ?? ''}</td>
+          <td>${registro.total?.toLocaleString("es-MX", { style: "currency", currency: "MXN" }) ?? ''}</td>
+          <td>${registro.conceptos_detalle ?? ''}</td>
+          <td>${registro.fecha_certificacion ?? ''}</td>
+          <td>${registro.serie ?? ''}</td>
+          <td>${registro.tipo ?? ''}</td>
+          <td>${registro.rfc_receptor ?? ''}</td>
+          <td>${registro.nombre_receptor ?? ''}</td>
+          <td class="${registro.es_gasto_medico ? 'true' : 'false'}">${registro.es_gasto_medico}</td>
+          <td class="${registro.gasto_reclamado ? 'true' : 'false'}">${registro.gasto_reclamado}</td>
+          <td>${registro.nota_reclamacion ?? ''}</td>
+          <td>${registro.especialidad ?? ''}</td>
+          <td>${registro.fecha_reclamacion ?? ''}</td>
+        `;
+        tbody.appendChild(fila);
+      });
+    }
+  </script>
+</body>
+</html>
