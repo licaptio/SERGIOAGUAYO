@@ -6,13 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- =========================================================
-       🧩 BLOQUE 1: FUENTES Y LIBRERÍAS
+       1️⃣ BLOQUE 1: FUENTES Y LIBRERÍAS
        ========================================================= -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <!-- =========================================================
-       🎨 BLOQUE 2: ESTILOS GENERALES
+       2️⃣ BLOQUE 2: ESTILOS GENERALES
        ========================================================= -->
   <style>
     body {
@@ -28,17 +28,18 @@
       margin-bottom: 25px;
     }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: white;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-  display: block;              /* 👈 permite scroll interno */
-  max-height: 80vh;            /* 👈 altura máxima visible */
-  overflow-y: auto;            /* 👈 activa scroll vertical */
-}
+    /* 🧾 Tabla principal */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+      display: block;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
 
     th, td {
       padding: 8px 10px;
@@ -47,24 +48,60 @@ table {
       text-align: left;
     }
 
-th {
-  background: #003366;
-  color: #fff;
-  position: sticky;            /* 👈 mantiene fijo el encabezado */
-  top: 0;                      /* 👈 anclado a la parte superior */
-  z-index: 2;                  /* 👈 evita que se tape */
-}
+    th {
+      background: #003366;
+      color: #fff;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
 
     tr:hover { background: #f3f7fb; }
 
-    .true { color: green; font-weight: 600; }
-    .false { color: red; font-weight: 600; }
+    /* 🌙 Fondo opaco detrás del tooltip */
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      z-index: 9998;
+    }
+
+    /* 💬 Tooltip modal */
+    #previewTooltip {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      max-width: 500px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: Poppins, sans-serif;
+      z-index: 9999;
+      opacity: 0;
+      transition: all 0.25s ease;
+      display: none;
+    }
+
+    #previewTooltip.visible {
+      display: block;
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
   </style>
 </head>
 
 <body>
+
   <!-- =========================================================
-       🧾 BLOQUE 3: ENCABEZADO Y TABLA
+       3️⃣ BLOQUE 3: ENCABEZADO Y TABLA
        ========================================================= -->
   <h2>🩺 Gastos Médicos – XML Inge Sergio</h2>
 
@@ -81,143 +118,195 @@ th {
         <th>Especialidad</th>
         <th>Gasto Reclamado</th>
         <th>Fecha Reclamación</th>
-       </tr>
+      </tr>
     </thead>
     <tbody></tbody>
   </table>
 
   <!-- =========================================================
-       ⚙️ BLOQUE 4: CONFIGURACIÓN DE SUPABASE
+       4️⃣–8️⃣ BLOQUE DE LÓGICA (SUPABASE + FUNCIONES)
        ========================================================= -->
   <script type="module">
-    // 🔑 CONFIGURA AQUÍ TUS DATOS DE SUPABASE
-    const supabaseUrl = "https://cvpbtjlupswbyxenugpz.supabase.co"; // 👉 tu URL
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY"; // 👉 reemplaza con tu key pública
+
+    /* ----------------------------------------
+       4️⃣ BLOQUE 4: CONFIGURACIÓN DE SUPABASE
+       ---------------------------------------- */
+    const supabaseUrl = "https://cvpbtjlupswbyxenugpz.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY";
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-// =========================================================
-// 📤 BLOQUE 5: CONSULTA A LA TABLA XML_INGE_SERGIO
-// =========================================================
-const { data, error } = await supabase
-  .from("xml_inge_sergio")
-  .select("*")
-  .eq("es_gasto_medico", true) // 🔎 filtro principal
-  .order("fecha", { ascending: true }); // 🕒 de más viejo a más reciente
+    /* ----------------------------------------
+       5️⃣ BLOQUE 5: CONSULTA TABLA PRINCIPAL
+       ---------------------------------------- */
+    const { data, error } = await supabase
+      .from("xml_inge_sergio")
+      .select("*")
+      .eq("es_gasto_medico", true)
+      .order("fecha", { ascending: true });
 
 if (error) {
-  console.error("Error al consultar la tabla:", error);
-  alert("⚠️ Error al obtener los datos. Revisa la consola.");
+  console.error("❌ Error al consultar Supabase:", error);
+  alert("Error al cargar los registros.");
 } else {
-// =========================================================
-// 🧮 BLOQUE 6: CONSTRUCCIÓN DE TABLA (EDITABLE CON FORMATO)
-// =========================================================
-const tbody = document.querySelector("#tablaGastos tbody");
-tbody.innerHTML = "";
-
-data.forEach(registro => {
-  const fechaFormateada = registro.fecha
-    ? new Date(registro.fecha).toLocaleDateString("es-MX", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric"
-      })
-    : "";
-
-const fila = document.createElement("tr");
-
-// 🎨 Si el registro ya fue reclamado, pinta la fila de verde bajito
-if (registro.gasto_reclamado) {
-  fila.style.backgroundColor = "#d7f8d7"; // verde pastel suave
+  /* el resto del código que renderiza la tabla */
 }
 
-fila.innerHTML = `
 
-    <td>${fechaFormateada}</td>
-    <td>${registro.rfc_emisor ?? ''}</td>
-    <td>${registro.razon_social_emisor ?? ''}</td>
-    <td>${registro.serie ?? ''}</td>
-    <td>${registro.factura ?? ''}</td>
-    <td>${registro.total?.toLocaleString("es-MX", { style: "currency", currency: "MXN" }) ?? ''}</td>
-    <td>${registro.nota_reclamacion ?? ''}</td>
-    <td>${registro.especialidad ?? ''}</td>
-    <!-- ✅ Campo editable: GASTO RECLAMADO (Sí/No) -->
-    <td style="text-align:center;">
-      <select data-id="${registro.id}" data-campo="gasto_reclamado" style="border:none; background:transparent;">
-        <option value="false" ${!registro.gasto_reclamado ? 'selected' : ''}>No</option>
-        <option value="true" ${registro.gasto_reclamado ? 'selected' : ''}>Sí</option>
-      </select>
-    </td>
+    /* ----------------------------------------
+       6️⃣ BLOQUE 6: RENDERIZADO DE TABLA
+       ---------------------------------------- */
+    const tbody = document.querySelector("#tablaGastos tbody");
+    tbody.innerHTML = "";
 
-    <!-- ✏️ Campo editable: FECHA RECLAMACIÓN -->
-    <td>
-      <input type="text" value="${registro.fecha_reclamacion ? new Date(registro.fecha_reclamacion).toLocaleDateString('es-MX', {day:'2-digit', month:'short', year:'numeric'}) : ''}"
-             data-id="${registro.id}" data-campo="fecha_reclamacion"
-             placeholder="DDMMAA"
-             style="border:none; outline:none; background:transparent; width:90px;">
-    </td>
-  `;
-  tbody.appendChild(fila);
-});
+    data.forEach(registro => {
+      const fechaFormateada = registro.fecha
+        ? new Date(registro.fecha).toLocaleDateString("es-MX", {
+            day: "2-digit", month: "2-digit", year: "numeric"
+          })
+        : "";
 
-// =========================================================
-// 💾 BLOQUE 7: EVENTOS DE ACTUALIZACIÓN AUTOMÁTICA + FORMATEO
-// =========================================================
-tbody.addEventListener("change", async (e) => {
-  const target = e.target;
-  const id = target.dataset.id;
-  const campo = target.dataset.campo;
-  if (!id || !campo) return;
+      const fila = document.createElement("tr");
+      if (registro.gasto_reclamado) fila.style.backgroundColor = "#d7f8d7";
 
-  let valor = target.value;
+      fila.innerHTML = `
+        <td>${fechaFormateada}</td>
+        <td>${registro.rfc_emisor ?? ''}</td>
+        <td>
+          <a href="#" onclick="mostrarConceptosRapidos('${registro.uuid}'); return false;"
+             style="color:#00416A; font-weight:600; text-decoration:none;">
+             ${registro.razon_social_emisor ?? ''}
+          </a>
+        </td>
+        <td>${registro.serie ?? ''}</td>
+        <td>${registro.factura ?? ''}</td>
+        <td>${registro.total?.toLocaleString("es-MX", { style: "currency", currency: "MXN" }) ?? ''}</td>
+        <td>${registro.nota_reclamacion ?? ''}</td>
+        <td>${registro.especialidad ?? ''}</td>
+        <td style="text-align:center;">
+          <select data-id="${registro.id}" data-campo="gasto_reclamado" style="border:none; background:transparent;">
+            <option value="false" ${!registro.gasto_reclamado ? 'selected' : ''}>No</option>
+            <option value="true" ${registro.gasto_reclamado ? 'selected' : ''}>Sí</option>
+          </select>
+        </td>
+        <td>
+          <input type="text"
+                 value="${registro.fecha_reclamacion ? new Date(registro.fecha_reclamacion).toLocaleDateString('es-MX', {day:'2-digit', month:'short', year:'numeric'}) : ''}"
+                 data-id="${registro.id}"
+                 data-campo="fecha_reclamacion"
+                 placeholder="DDMMAA"
+                 style="border:none; outline:none; background:transparent; width:90px;">
+        </td>
+      `;
+      tbody.appendChild(fila);
+    });
 
-// 🗓️ Si es fecha_reclamacion y se teclea como 160725 => 16-Jul-2025
-if (campo === "fecha_reclamacion") {
-  const match = valor.match(/^(\d{2})(\d{2})(\d{2})$/);
-  if (match) {
-    const [_, dia, mes, anio] = match;
-    const meses = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
-    const mesNombre = meses[parseInt(mes) - 1] ?? "";
+    /* ----------------------------------------
+       7️⃣ BLOQUE 7: GUARDADO AUTOMÁTICO
+       ---------------------------------------- */
+    tbody.addEventListener("change", async (e) => {
+      const target = e.target;
+      const id = target.dataset.id;
+      const campo = target.dataset.campo;
+      if (!id || !campo) return;
 
-    // ✅ construir el año correctamente
-    const anioCompleto = 2000 + parseInt(anio);  
-    valor = `${dia}-${mesNombre}-${anioCompleto}`;
+      let valor = target.value;
 
-    target.value = valor; // mostrar en input formateado
-  }
-}
+      if (campo === "fecha_reclamacion") {
+        const match = valor.match(/^(\d{2})(\d{2})(\d{2})$/);
+        if (match) {
+          const [_, d, m, a] = match;
+          const meses = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+          valor = `${d}-${meses[parseInt(m)-1]}-${2000+parseInt(a)}`;
+          target.value = valor;
+        }
+      }
 
-  // ⚙️ Convertir "true"/"false" a booleano real
-  if (campo === "gasto_reclamado") {
-    valor = valor === "true";
-  }
+      if (campo === "gasto_reclamado") valor = valor === "true";
 
-  // 💾 Guardar cambio en Supabase
-  const { error } = await supabase
-    .from("xml_inge_sergio")
-    .update({ [campo]: valor })
-    .eq("id", id);
+      const { error } = await supabase
+        .from("xml_inge_sergio")
+        .update({ [campo]: valor })
+        .eq("id", id);
 
-  if (error) {
-    console.error("❌ Error al actualizar:", error);
-    alert("⚠️ No se pudo guardar el cambio");
-  } else {
-    console.log(`✅ ${campo} actualizado correctamente para ID ${id}`);
-    if (campo === "gasto_reclamado") {
-  // 🔄 Cambia el color de la fila visualmente al guardar
-  const fila = target.closest("tr");
-  if (valor === true) {
-    fila.style.backgroundColor = "#d7f8d7"; // reclamado = verde suave
-  } else {
-    fila.style.backgroundColor = ""; // sin color si vuelve a "No"
-  }
-}
+      if (error) {
+        alert("⚠️ Error al guardar cambio");
+        console.error(error);
+      } else {
+        const fila = target.closest("tr");
+        fila.style.backgroundColor = valor ? "#d7f8d7" : "";
+      }
+    });
 
-  }
-});
+    /* ----------------------------------------
+       8️⃣ BLOQUE 8: TOOLTIP (CONCEPTOS DETALLE)
+       ---------------------------------------- */
+    window.mostrarConceptosRapidos = async function(uuid) {
+      const overlay = document.getElementById("overlay");
+      const tooltip = document.getElementById("previewTooltip");
+      const cont = document.getElementById("tooltipContent");
 
+      overlay.style.display = "block";
+      tooltip.style.display = "block";
+      setTimeout(() => tooltip.classList.add("visible"), 10);
 
-}
+      cont.innerHTML = "Cargando...";
 
+      const { data, error } = await supabase
+        .from("xml_inge_sergio")
+        .select("conceptos_detalle")
+        .eq("uuid", uuid)
+        .single();
+
+      if (error || !data) {
+        cont.innerHTML = "<p style='color:red;'>No se pudieron cargar los conceptos.</p>";
+        return;
+      }
+
+      const conceptos = data.conceptos_detalle || [];
+      if (conceptos.length === 0) {
+        cont.innerHTML = "<p>Sin conceptos registrados.</p>";
+        return;
+      }
+
+      let html = "<table style='width:100%; border-collapse:collapse; font-size:13px;'>";
+      html += "<tr style='background:#003366;color:white;'><th>Cant.</th><th>Descripción</th><th>Importe</th></tr>";
+      conceptos.forEach(c => {
+        html += `<tr>
+          <td style='border:1px solid #ddd; padding:4px;'>${c.cantidad ?? 1}</td>
+          <td style='border:1px solid #ddd; padding:4px;'>${c.descripcion ?? ''}</td>
+          <td style='border:1px solid #ddd; padding:4px;'>$${parseFloat(c.costoUnitario ?? 0).toFixed(2)}</td>
+        </tr>`;
+      });
+      html += "</table>";
+      cont.innerHTML = html;
+    };
+
+    window.cerrarTooltip = function() {
+      const overlay = document.getElementById("overlay");
+      const tooltip = document.getElementById("previewTooltip");
+      tooltip.classList.remove("visible");
+      overlay.style.display = "none";
+      setTimeout(() => tooltip.style.display = "none", 200);
+    };
   </script>
+
+  <!-- =========================================================
+       9️⃣ BLOQUE 9: COMPONENTES VISUALES (MODAL + OVERLAY)
+       ========================================================= -->
+  <div id="overlay" onclick="cerrarTooltip()"></div>
+
+  <div id="previewTooltip">
+    <h3 style="margin-top:0; color:#003366;">🧾 Conceptos</h3>
+    <div id="tooltipContent"></div>
+    <button onclick="cerrarTooltip()" style="
+      margin-top:10px;
+      padding:6px 12px;
+      background:#003366;
+      color:white;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;">Cerrar</button>
+  </div>
+
 </body>
 </html>
