@@ -181,7 +181,17 @@ if (error) {
         <td>${registro.factura ?? ''}</td>
         <td>${registro.total?.toLocaleString("es-MX", { style: "currency", currency: "MXN" }) ?? ''}</td>
         <td>${registro.nota_reclamacion ?? ''}</td>
-        <td>${registro.especialidad ?? ''}</td>
+        <td>
+  <select data-id="${registro.id}" data-campo="especialidad" style="border:none; background:transparent;">
+    <option value="">-- Selecciona --</option>
+    <option value="Cardiología" ${registro.especialidad === "Cardiología" ? 'selected' : ''}>Cardiología</option>
+    <option value="Urología" ${registro.especialidad === "Urología" ? 'selected' : ''}>Urología</option>
+    <option value="Ginecología" ${registro.especialidad === "Ginecología" ? 'selected' : ''}>Ginecología</option>
+    <option value="Oncología" ${registro.especialidad === "Oncología" ? 'selected' : ''}>Oncología</option>
+    <option value="Endocrinología" ${registro.especialidad === "Endocrinología" ? 'selected' : ''}>Endocrinología</option>
+  </select>
+</td>
+
         <td style="text-align:center;">
           <select data-id="${registro.id}" data-campo="gasto_reclamado" style="border:none; background:transparent;">
             <option value="false" ${!registro.gasto_reclamado ? 'selected' : ''}>No</option>
@@ -228,13 +238,17 @@ if (error) {
         .update({ [campo]: valor })
         .eq("id", id);
 
-      if (error) {
-        alert("⚠️ Error al guardar cambio");
-        console.error(error);
-      } else {
-        const fila = target.closest("tr");
-        fila.style.backgroundColor = valor ? "#d7f8d7" : "";
-      }
+if (error) {
+  alert("⚠️ Error al guardar cambio");
+  console.error(error);
+} else {
+  const fila = target.closest("tr");
+  // ✅ Solo pinta de verde si el campo modificado es "gasto_reclamado"
+  if (campo === "gasto_reclamado") {
+    fila.style.backgroundColor = valor ? "#d7f8d7" : "";
+  }
+}
+
     });
 
     /* ----------------------------------------
