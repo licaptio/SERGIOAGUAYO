@@ -70,14 +70,9 @@
         <th>Fecha</th>
         <th>RFC Emisor</th>
         <th>Razón Social</th>
+        <th>Serie</th>
         <th>Factura</th>
         <th>Total</th>
-        <th>Conceptos Detalle</th>
-        <th>Fecha Certificación</th>
-        <th>Serie</th>
-        <th>Tipo</th>
-        <th>RFC Receptor</th>
-        <th>Nombre Receptor</th>
         <th>Es Gasto Médico</th>
         <th>Gasto Reclamado</th>
         <th>Nota Reclamación</th>
@@ -94,7 +89,7 @@
   <script type="module">
     // 🔑 CONFIGURA AQUÍ TUS DATOS DE SUPABASE
     const supabaseUrl = "https://cvpbtjlupswbyxenugpz.supabase.co"; // 👉 tu URL
-    const supabaseKey = "TU_API_KEY_PUBLICA"; // 👉 reemplaza con tu key pública
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY"; // 👉 reemplaza con tu key pública
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
     // =========================================================
@@ -122,14 +117,9 @@
           <td>${registro.fecha ?? ''}</td>
           <td>${registro.rfc_emisor ?? ''}</td>
           <td>${registro.razon_social_emisor ?? ''}</td>
+          <td>${registro.serie ?? ''}</td>
           <td>${registro.factura ?? ''}</td>
           <td>${registro.total?.toLocaleString("es-MX", { style: "currency", currency: "MXN" }) ?? ''}</td>
-          <td>${registro.conceptos_detalle ?? ''}</td>
-          <td>${registro.fecha_certificacion ?? ''}</td>
-          <td>${registro.serie ?? ''}</td>
-          <td>${registro.tipo ?? ''}</td>
-          <td>${registro.rfc_receptor ?? ''}</td>
-          <td>${registro.nombre_receptor ?? ''}</td>
           <td class="${registro.es_gasto_medico ? 'true' : 'false'}">${registro.es_gasto_medico}</td>
           <td class="${registro.gasto_reclamado ? 'true' : 'false'}">${registro.gasto_reclamado}</td>
           <td>${registro.nota_reclamacion ?? ''}</td>
