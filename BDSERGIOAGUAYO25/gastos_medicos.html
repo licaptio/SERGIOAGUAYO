@@ -28,14 +28,17 @@
       margin-bottom: 25px;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-    }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+  display: block;              /* 👈 permite scroll interno */
+  max-height: 80vh;            /* 👈 altura máxima visible */
+  overflow-y: auto;            /* 👈 activa scroll vertical */
+}
 
     th, td {
       padding: 8px 10px;
@@ -44,12 +47,13 @@
       text-align: left;
     }
 
-    th {
-      background: #003366;
-      color: #fff;
-      position: sticky;
-      top: 0;
-    }
+th {
+  background: #003366;
+  color: #fff;
+  position: sticky;            /* 👈 mantiene fijo el encabezado */
+  top: 0;                      /* 👈 anclado a la parte superior */
+  z-index: 2;                  /* 👈 evita que se tape */
+}
 
     tr:hover { background: #f3f7fb; }
 
@@ -73,12 +77,11 @@
         <th>Serie</th>
         <th>Factura</th>
         <th>Total</th>
-        <th>Es Gasto Médico</th>
-        <th>Gasto Reclamado</th>
         <th>Nota Reclamación</th>
         <th>Especialidad</th>
+        <th>Gasto Reclamado</th>
         <th>Fecha Reclamación</th>
-      </tr>
+       </tr>
     </thead>
     <tbody></tbody>
   </table>
@@ -92,43 +95,129 @@
     const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY"; // 👉 reemplaza con tu key pública
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    // =========================================================
-    // 📤 BLOQUE 5: CONSULTA A LA TABLA XML_INGE_SERGIO
-    // =========================================================
-    const { data, error } = await supabase
-      .from("xml_inge_sergio")
-      .select("*")
-      .eq("es_gasto_medico", true) // 🔎 filtro principal
-      .order("fecha", { ascending: false });
+// =========================================================
+// 📤 BLOQUE 5: CONSULTA A LA TABLA XML_INGE_SERGIO
+// =========================================================
+const { data, error } = await supabase
+  .from("xml_inge_sergio")
+  .select("*")
+  .eq("es_gasto_medico", true) // 🔎 filtro principal
+  .order("fecha", { ascending: true }); // 🕒 de más viejo a más reciente
 
-    if (error) {
-      console.error("Error al consultar la tabla:", error);
-      alert("⚠️ Error al obtener los datos. Revisa la consola.");
-    } else {
-      // =========================================================
-      // 🧮 BLOQUE 6: CONSTRUCCIÓN DE TABLA
-      // =========================================================
-      const tbody = document.querySelector("#tablaGastos tbody");
-      tbody.innerHTML = "";
+if (error) {
+  console.error("Error al consultar la tabla:", error);
+  alert("⚠️ Error al obtener los datos. Revisa la consola.");
+} else {
+// =========================================================
+// 🧮 BLOQUE 6: CONSTRUCCIÓN DE TABLA (EDITABLE CON FORMATO)
+// =========================================================
+const tbody = document.querySelector("#tablaGastos tbody");
+tbody.innerHTML = "";
 
-      data.forEach(registro => {
-        const fila = document.createElement("tr");
-        fila.innerHTML = `
-          <td>${registro.fecha ?? ''}</td>
-          <td>${registro.rfc_emisor ?? ''}</td>
-          <td>${registro.razon_social_emisor ?? ''}</td>
-          <td>${registro.serie ?? ''}</td>
-          <td>${registro.factura ?? ''}</td>
-          <td>${registro.total?.toLocaleString("es-MX", { style: "currency", currency: "MXN" }) ?? ''}</td>
-          <td class="${registro.es_gasto_medico ? 'true' : 'false'}">${registro.es_gasto_medico}</td>
-          <td class="${registro.gasto_reclamado ? 'true' : 'false'}">${registro.gasto_reclamado}</td>
-          <td>${registro.nota_reclamacion ?? ''}</td>
-          <td>${registro.especialidad ?? ''}</td>
-          <td>${registro.fecha_reclamacion ?? ''}</td>
-        `;
-        tbody.appendChild(fila);
-      });
-    }
+data.forEach(registro => {
+  const fechaFormateada = registro.fecha
+    ? new Date(registro.fecha).toLocaleDateString("es-MX", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+      })
+    : "";
+
+const fila = document.createElement("tr");
+
+// 🎨 Si el registro ya fue reclamado, pinta la fila de verde bajito
+if (registro.gasto_reclamado) {
+  fila.style.backgroundColor = "#d7f8d7"; // verde pastel suave
+}
+
+fila.innerHTML = `
+
+    <td>${fechaFormateada}</td>
+    <td>${registro.rfc_emisor ?? ''}</td>
+    <td>${registro.razon_social_emisor ?? ''}</td>
+    <td>${registro.serie ?? ''}</td>
+    <td>${registro.factura ?? ''}</td>
+    <td>${registro.total?.toLocaleString("es-MX", { style: "currency", currency: "MXN" }) ?? ''}</td>
+    <td>${registro.nota_reclamacion ?? ''}</td>
+    <td>${registro.especialidad ?? ''}</td>
+    <!-- ✅ Campo editable: GASTO RECLAMADO (Sí/No) -->
+    <td style="text-align:center;">
+      <select data-id="${registro.id}" data-campo="gasto_reclamado" style="border:none; background:transparent;">
+        <option value="false" ${!registro.gasto_reclamado ? 'selected' : ''}>No</option>
+        <option value="true" ${registro.gasto_reclamado ? 'selected' : ''}>Sí</option>
+      </select>
+    </td>
+
+    <!-- ✏️ Campo editable: FECHA RECLAMACIÓN -->
+    <td>
+      <input type="text" value="${registro.fecha_reclamacion ? new Date(registro.fecha_reclamacion).toLocaleDateString('es-MX', {day:'2-digit', month:'short', year:'numeric'}) : ''}"
+             data-id="${registro.id}" data-campo="fecha_reclamacion"
+             placeholder="DDMMAA"
+             style="border:none; outline:none; background:transparent; width:90px;">
+    </td>
+  `;
+  tbody.appendChild(fila);
+});
+
+// =========================================================
+// 💾 BLOQUE 7: EVENTOS DE ACTUALIZACIÓN AUTOMÁTICA + FORMATEO
+// =========================================================
+tbody.addEventListener("change", async (e) => {
+  const target = e.target;
+  const id = target.dataset.id;
+  const campo = target.dataset.campo;
+  if (!id || !campo) return;
+
+  let valor = target.value;
+
+// 🗓️ Si es fecha_reclamacion y se teclea como 160725 => 16-Jul-2025
+if (campo === "fecha_reclamacion") {
+  const match = valor.match(/^(\d{2})(\d{2})(\d{2})$/);
+  if (match) {
+    const [_, dia, mes, anio] = match;
+    const meses = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+    const mesNombre = meses[parseInt(mes) - 1] ?? "";
+
+    // ✅ construir el año correctamente
+    const anioCompleto = 2000 + parseInt(anio);  
+    valor = `${dia}-${mesNombre}-${anioCompleto}`;
+
+    target.value = valor; // mostrar en input formateado
+  }
+}
+
+  // ⚙️ Convertir "true"/"false" a booleano real
+  if (campo === "gasto_reclamado") {
+    valor = valor === "true";
+  }
+
+  // 💾 Guardar cambio en Supabase
+  const { error } = await supabase
+    .from("xml_inge_sergio")
+    .update({ [campo]: valor })
+    .eq("id", id);
+
+  if (error) {
+    console.error("❌ Error al actualizar:", error);
+    alert("⚠️ No se pudo guardar el cambio");
+  } else {
+    console.log(`✅ ${campo} actualizado correctamente para ID ${id}`);
+    if (campo === "gasto_reclamado") {
+  // 🔄 Cambia el color de la fila visualmente al guardar
+  const fila = target.closest("tr");
+  if (valor === true) {
+    fila.style.backgroundColor = "#d7f8d7"; // reclamado = verde suave
+  } else {
+    fila.style.backgroundColor = ""; // sin color si vuelve a "No"
+  }
+}
+
+  }
+});
+
+
+}
+
   </script>
 </body>
 </html>
