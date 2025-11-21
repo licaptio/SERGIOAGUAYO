@@ -5,15 +5,9 @@
   <title>🩺 Gastos Médicos – XML Inge Sergio</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- =========================================================
-       1️⃣ BLOQUE 1: FUENTES Y LIBRERÍAS
-       ========================================================= -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-  <!-- =========================================================
-       2️⃣ BLOQUE 2: ESTILOS GENERALES
-       ========================================================= -->
   <style>
     body {
       font-family: 'Poppins', sans-serif;
@@ -28,7 +22,6 @@
       margin-bottom: 25px;
     }
 
-    /* 🧾 Tabla principal */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -58,7 +51,6 @@
 
     tr:hover { background: #f3f7fb; }
 
-    /* 🌙 Fondo opaco detrás del tooltip */
     #overlay {
       position: fixed;
       top: 0;
@@ -70,7 +62,6 @@
       z-index: 9998;
     }
 
-    /* 💬 Tooltip modal */
     #previewTooltip {
       position: fixed;
       top: 50%;
@@ -100,17 +91,14 @@
 
 <body>
 
-  <!-- =========================================================
-       3️⃣ BLOQUE 3: ENCABEZADO Y TABLA
-       ========================================================= -->
-  <h2>🩺 Gastos Médicos – XML Inge Sergio</h2>
+<h2>🩺 Gastos Médicos – XML Inge Sergio</h2>
 
-  <table id="tablaGastos">
+<table id="tablaGastos">
 <thead>
   <tr>
     <th>Fecha</th>
     <th>RFC Emisor</th>
-    <th>UUID</th>   <!-- ⬅️ AGREGADO -->
+    <th>UUID</th>
     <th>Razón Social</th>
     <th>Serie</th>
     <th>Factura</th>
@@ -122,250 +110,137 @@
     <th>Foto</th>
   </tr>
 </thead>
+<tbody></tbody>
+</table>
 
-    <tbody></tbody>
-  </table>
+<script type="module">
 
-  <!-- =========================================================
-       4️⃣–8️⃣ BLOQUE DE LÓGICA (SUPABASE + FUNCIONES)
-       ========================================================= -->
-  <script type="module">
+/* === SUPABASE === */
+const supabase = window.supabase.createClient(
+  "https://cvpbtjlupswbyxenugpz.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+);
 
-    /* ----------------------------------------
-       4️⃣ BLOQUE 4: CONFIGURACIÓN DE SUPABASE
-       ---------------------------------------- */
-    const supabaseUrl = "https://cvpbtjlupswbyxenugpz.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY";
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-    /* ----------------------------------------
-       5️⃣ BLOQUE 5: CONSULTA TABLA PRINCIPAL
-       ---------------------------------------- */
-    const { data, error } = await supabase
-      .from("xml_inge_sergio")
-      .select("*")
-      .eq("es_gasto_medico", true)
-      .order("fecha", { ascending: true });
+/* === CONSULTA === */
+const { data, error } = await supabase
+  .from("xml_inge_sergio")
+  .select("*")
+  .eq("es_gasto_medico", true)
+  .order("fecha", { ascending: true });
 
 if (error) {
-  console.error("❌ Error al consultar Supabase:", error);
-  alert("Error al cargar los registros.");
-} else {
-  /* el resto del código que renderiza la tabla */
+  alert("Error al cargar datos");
+  console.error(error);
 }
 
+const tbody = document.querySelector("#tablaGastos tbody");
+tbody.innerHTML = "";
 
-    /* ----------------------------------------
-       6️⃣ BLOQUE 6: RENDERIZADO DE TABLA
-       ---------------------------------------- */
-    const tbody = document.querySelector("#tablaGastos tbody");
-    tbody.innerHTML = "";
+/* === RENDER FILAS === */
+data.forEach(registro => {
+  const fechaFormateada = registro.fecha
+    ? new Date(registro.fecha).toLocaleDateString("es-MX")
+    : "";
 
-    data.forEach(registro => {
-      const fechaFormateada = registro.fecha
-        ? new Date(registro.fecha).toLocaleDateString("es-MX", {
-            day: "2-digit", month: "2-digit", year: "numeric"
-          })
-        : "";
-      const fila = document.createElement("tr");
-      if (registro.gasto_reclamado) fila.style.backgroundColor = "#d7f8d7";
+  const fila = document.createElement("tr");
+  if (registro.gasto_reclamado) fila.style.backgroundColor = "#d7f8d7";
 
-      fila.innerHTML = `
-        <td>${fechaFormateada}</td>
-        <td>${registro.rfc_emisor ?? ''}</td>
-        <td style="max-width:180px;">
-  <div style="display:flex; flex-direction:column;">
-    <span style="font-weight:600; color:#0c6cbd;">${registro.uuid ?? ''}</span>
+  fila.innerHTML = `
+    <td>${fechaFormateada}</td>
+    <td>${registro.rfc_emisor ?? ''}</td>
 
-    <button onclick="subirFoto('${registro.uuid}')" 
-      style="margin-top:3px; background:#0066cc; color:white; border:none;
-             padding:4px 8px; border-radius:5px; cursor:pointer; font-size:11px;">
-      📸 Tomar / Subir foto
-    </button>
-  </div>
-</td>
+    <!-- COLUMNA UUID + BOTÓN SUBIR FOTO -->
+    <td style="max-width:180px;">
+      <div style="display:flex; flex-direction:column;">
+        <span style="font-weight:600; color:#0c6cbd;">${registro.uuid}</span>
+        <button onclick="subirFoto('${registro.uuid}')"
+          style="margin-top:3px; background:#0066cc; color:white; border:none;
+          padding:4px 8px; border-radius:5px; cursor:pointer; font-size:11px;">
+          📸 Tomar / Subir foto
+        </button>
+      </div>
+    </td>
 
-        <td>${registro.serie ?? ''}</td>
-        <td>${registro.factura ?? ''}</td>
-        <td>${registro.total?.toLocaleString("es-MX", { style: "currency", currency: "MXN" }) ?? ''}</td>
-        <td>${registro.nota_reclamacion ?? ''}</td>
-        <td>
-  <select data-id="${registro.id}" data-campo="especialidad" style="border:none; background:transparent;">
-    <option value="">-- Selecciona --</option>
-    <option value="Cardiología" ${registro.especialidad === "Cardiología" ? 'selected' : ''}>Cardiología</option>
-    <option value="Urología" ${registro.especialidad === "Urología" ? 'selected' : ''}>Urología</option>
-    <option value="Ginecología" ${registro.especialidad === "Ginecología" ? 'selected' : ''}>Ginecología</option>
-    <option value="Oncología" ${registro.especialidad === "Oncología" ? 'selected' : ''}>Oncología</option>
-    <option value="Endocrinología" ${registro.especialidad === "Endocrinología" ? 'selected' : ''}>Endocrinología</option>
-  </select>
-</td>
+    <td>${registro.razon_social_emisor ?? ''}</td>
+    <td>${registro.serie ?? ''}</td>
+    <td>${registro.factura ?? ''}</td>
+    <td>${registro.total?.toLocaleString("es-MX",{style:"currency",currency:"MXN"}) ?? ''}</td>
+    <td>${registro.nota_reclamacion ?? ''}</td>
 
-        <td style="text-align:center;">
-          <select data-id="${registro.id}" data-campo="gasto_reclamado" style="border:none; background:transparent;">
-            <option value="false" ${!registro.gasto_reclamado ? 'selected' : ''}>No</option>
-            <option value="true" ${registro.gasto_reclamado ? 'selected' : ''}>Sí</option>
-          </select>
-        </td>
-        <td>
-          <input type="text"
-                 value="${registro.fecha_reclamacion ? new Date(registro.fecha_reclamacion).toLocaleDateString('es-MX', {day:'2-digit', month:'short', year:'numeric'}) : ''}"
-                 data-id="${registro.id}"
-                 data-campo="fecha_reclamacion"
-                 placeholder="DDMMAA"
-                 style="border:none; outline:none; background:transparent; width:90px;">
-        </td>
-        <td id="celdaFotos-${registro.uuid}" style="display:flex; gap:4px;">
-  <span style="font-size:10px; color:#777;">Cargando...</span>
-</td>
+    <td>
+      <select data-id="${registro.id}" data-campo="especialidad" style="border:none; background:transparent;">
+        <option value="">-- Selecciona --</option>
+        <option value="Cardiología"${registro.especialidad==="Cardiología"?' selected':''}>Cardiología</option>
+        <option value="Urología"${registro.especialidad==="Urología"?' selected':''}>Urología</option>
+        <option value="Ginecología"${registro.especialidad==="Ginecología"?' selected':''}>Ginecología</option>
+        <option value="Oncología"${registro.especialidad==="Oncología"?' selected':''}>Oncología</option>
+        <option value="Endocrinología"${registro.especialidad==="Endocrinología"?' selected':''}>Endocrinología</option>
+      </select>
+    </td>
 
-      `;
-      tbody.appendChild(fila);
-    });
+    <td>
+      <select data-id="${registro.id}" data-campo="gasto_reclamado" style="border:none; background:transparent;">
+        <option value="false"${!registro.gasto_reclamado?' selected':''}>No</option>
+        <option value="true"${registro.gasto_reclamado?' selected':''}>Sí</option>
+      </select>
+    </td>
+
+    <td>
+      <input type="text"
+        value="${registro.fecha_reclamacion ? new Date(registro.fecha_reclamacion).toLocaleDateString('es-MX') : ''}"
+        data-id="${registro.id}"
+        data-campo="fecha_reclamacion"
+        placeholder="DDMMAA"
+        style="border:none; outline:none; background:transparent; width:90px;">
+    </td>
+
+    <td id="celdaFotos-${registro.uuid}" style="display:flex; gap:4px;">
+      <span style="font-size:10px;color:#777;">Cargando...</span>
+    </td>
+  `;
+
+  tbody.appendChild(fila);
+});
+
+/* === CARGAR MINIATURAS === */
 data.forEach(registro => {
   cargarMiniFotos(registro.uuid);
 });
 
-    /* ----------------------------------------
-       7️⃣ BLOQUE 7: GUARDADO AUTOMÁTICO
-       ---------------------------------------- */
-    tbody.addEventListener("change", async (e) => {
-      const target = e.target;
-      const id = target.dataset.id;
-      const campo = target.dataset.campo;
-      if (!id || !campo) return;
-
-      let valor = target.value;
-
-      if (campo === "fecha_reclamacion") {
-        const match = valor.match(/^(\d{2})(\d{2})(\d{2})$/);
-        if (match) {
-          const [_, d, m, a] = match;
-          const meses = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
-          valor = `${d}-${meses[parseInt(m)-1]}-${2000+parseInt(a)}`;
-          target.value = valor;
-        }
-      }
-
-      if (campo === "gasto_reclamado") valor = valor === "true";
-
-      const { error } = await supabase
-        .from("xml_inge_sergio")
-        .update({ [campo]: valor })
-        .eq("id", id);
-
-if (error) {
-  alert("⚠️ Error al guardar cambio");
-  console.error(error);
-} else {
-  const fila = target.closest("tr");
-  // ✅ Solo pinta de verde si el campo modificado es "gasto_reclamado"
-  if (campo === "gasto_reclamado") {
-    fila.style.backgroundColor = valor ? "#d7f8d7" : "";
-  }
-}
-
-    });
-
-    /* ----------------------------------------
-       8️⃣ BLOQUE 8: TOOLTIP (CONCEPTOS DETALLE)
-       ---------------------------------------- */
-    window.mostrarConceptosRapidos = async function(uuid) {
-      const overlay = document.getElementById("overlay");
-      const tooltip = document.getElementById("previewTooltip");
-      const cont = document.getElementById("tooltipContent");
-
-      overlay.style.display = "block";
-      tooltip.style.display = "block";
-      setTimeout(() => tooltip.classList.add("visible"), 10);
-
-      cont.innerHTML = "Cargando...";
-
-      const { data, error } = await supabase
-        .from("xml_inge_sergio")
-        .select("conceptos_detalle")
-        .eq("uuid", uuid)
-        .single();
-
-      if (error || !data) {
-        cont.innerHTML = "<p style='color:red;'>No se pudieron cargar los conceptos.</p>";
-        return;
-      }
-
-      const conceptos = data.conceptos_detalle || [];
-      if (conceptos.length === 0) {
-        cont.innerHTML = "<p>Sin conceptos registrados.</p>";
-        return;
-      }
-
-      let html = "<table style='width:100%; border-collapse:collapse; font-size:13px;'>";
-      html += "<tr style='background:#003366;color:white;'><th>Cant.</th><th>Descripción</th><th>Importe</th></tr>";
-      conceptos.forEach(c => {
-        html += `<tr>
-          <td style='border:1px solid #ddd; padding:4px;'>${c.cantidad ?? 1}</td>
-          <td style='border:1px solid #ddd; padding:4px;'>${c.descripcion ?? ''}</td>
-          <td style='border:1px solid #ddd; padding:4px;'>$${parseFloat(c.costoUnitario ?? 0).toFixed(2)}</td>
-        </tr>`;
-      });
-      html += "</table>";
-      cont.innerHTML = html;
-    };
-
-    window.cerrarTooltip = function() {
-      const overlay = document.getElementById("overlay");
-      const tooltip = document.getElementById("previewTooltip");
-      tooltip.classList.remove("visible");
-      overlay.style.display = "none";
-      setTimeout(() => tooltip.style.display = "none", 200);
-    };
-  /* ... tu código ... */
-
-/* ---------- FUNCION SUBIR FOTO ---------- */
-
+/* === SUBIR FOTO === */
 window.subirFoto = function(uuid) {
-  const fileInput = document.getElementById("fileInputHidden");
-
-  fileInput.value = "";
-
-  fileInput.onchange = async () => {
-    const archivo = fileInput.files[0];
+  const input = document.getElementById("fileInputHidden");
+  input.value = "";
+  input.onchange = async () => {
+    const archivo = input.files[0];
     if (!archivo) return;
 
     const nombre = `${uuid}/${Date.now()}_${archivo.name}`;
 
     const { error } = await supabase.storage
       .from("gastos_medicos_fotos")
-      .upload(nombre, archivo, {
-        cacheControl: "3600",
-        upsert: false
-      });
+      .upload(nombre, archivo);
 
     if (error) {
-      alert("❌ Error al subir la foto");
-      console.error(error);
+      alert("Error al subir foto");
       return;
     }
 
-    alert("📸 Foto subida correctamente");
     cargarMiniFotos(uuid);
+    alert("Foto subida correctamente");
   };
 
-  fileInput.click();
+  input.click();
 };
+
+/* === MINIATURAS === */
 async function cargarMiniFotos(uuid) {
   const celda = document.getElementById(`celdaFotos-${uuid}`);
-  if (!celda) return;
-
   celda.innerHTML = "Cargando...";
 
-  const { data: archivos, error } = await supabase.storage
+  const { data: archivos } = await supabase.storage
     .from("gastos_medicos_fotos")
-    .list(uuid + "/", { limit: 100 });
-
-  if (error) {
-    celda.innerHTML = "<span style='color:red;'>Error</span>";
-    console.error(error);
-    return;
-  }
+    .list(uuid + "/", { limit: 50 });
 
   celda.innerHTML = "";
 
@@ -375,43 +250,25 @@ async function cargarMiniFotos(uuid) {
   }
 
   archivos.forEach(a => {
-    const { data: urlData } = supabase.storage
+    const { data: url } = supabase.storage
       .from("gastos_medicos_fotos")
       .getPublicUrl(uuid + "/" + a.name);
 
     const img = document.createElement("img");
-    img.src = urlData.publicUrl;
+    img.src = url.publicUrl;
     img.style.width = "40px";
     img.style.height = "40px";
     img.style.objectFit = "cover";
     img.style.borderRadius = "4px";
     img.style.cursor = "pointer";
-
-    img.onclick = () => window.open(urlData.publicUrl, "_blank");
+    img.onclick = () => window.open(url.publicUrl, "_blank");
 
     celda.appendChild(img);
   });
 }
 
-  </script>
+</script>
 
-  <!-- =========================================================
-       9️⃣ BLOQUE 9: COMPONENTES VISUALES (MODAL + OVERLAY)
-       ========================================================= -->
-  <div id="overlay" onclick="cerrarTooltip()"></div>
-
-  <div id="previewTooltip">
-    <h3 style="margin-top:0; color:#003366;">🧾 Conceptos</h3>
-    <div id="tooltipContent"></div>
-    <button onclick="cerrarTooltip()" style="
-      margin-top:10px;
-      padding:6px 12px;
-      background:#003366;
-      color:white;
-      border:none;
-      border-radius:6px;
-      cursor:pointer;">Cerrar</button>
-  </div>
 <input type="file" id="fileInputHidden" accept="image/*" capture="environment" style="display:none;">
 
 </body>
