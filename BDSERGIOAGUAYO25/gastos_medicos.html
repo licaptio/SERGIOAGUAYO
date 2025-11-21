@@ -106,20 +106,22 @@
   <h2>🩺 Gastos Médicos – XML Inge Sergio</h2>
 
   <table id="tablaGastos">
-    <thead>
-      <tr>
-        <th>Fecha</th>
-        <th>RFC Emisor</th>
-        <th>Razón Social</th>
-        <th>Serie</th>
-        <th>Factura</th>
-        <th>Total</th>
-        <th>Nota Reclamación</th>
-        <th>Especialidad</th>
-        <th>Gasto Reclamado</th>
-        <th>Fecha Reclamación</th>
-      </tr>
-    </thead>
+<thead>
+  <tr>
+    <th>Fecha</th>
+    <th>RFC Emisor</th>
+    <th>UUID</th>   <!-- ⬅️ AGREGADO -->
+    <th>Razón Social</th>
+    <th>Serie</th>
+    <th>Factura</th>
+    <th>Total</th>
+    <th>Nota Reclamación</th>
+    <th>Especialidad</th>
+    <th>Gasto Reclamado</th>
+    <th>Fecha Reclamación</th>
+  </tr>
+</thead>
+
     <tbody></tbody>
   </table>
 
@@ -171,6 +173,7 @@ if (error) {
       fila.innerHTML = `
         <td>${fechaFormateada}</td>
         <td>${registro.rfc_emisor ?? ''}</td>
+        <td style="color:#0c6cbd; font-weight:600;">${registro.uuid ?? ''}</td>
         <td>
           <a href="#" onclick="mostrarConceptosRapidos('${registro.uuid}'); return false;"
              style="color:#00416A; font-weight:600; text-decoration:none;">
