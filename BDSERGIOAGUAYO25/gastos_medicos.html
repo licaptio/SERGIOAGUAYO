@@ -119,6 +119,7 @@
     <th>Especialidad</th>
     <th>Gasto Reclamado</th>
     <th>Fecha Reclamación</th>
+    <th>Foto</th>
   </tr>
 </thead>
 
@@ -166,7 +167,6 @@ if (error) {
             day: "2-digit", month: "2-digit", year: "numeric"
           })
         : "";
-
       const fila = document.createElement("tr");
       if (registro.gasto_reclamado) fila.style.backgroundColor = "#d7f8d7";
 
@@ -174,12 +174,18 @@ if (error) {
         <td>${fechaFormateada}</td>
         <td>${registro.rfc_emisor ?? ''}</td>
         <td style="color:#0c6cbd; font-weight:600;">${registro.uuid ?? ''}</td>
-        <td>
-          <a href="#" onclick="mostrarConceptosRapidos('${registro.uuid}'); return false;"
-             style="color:#00416A; font-weight:600; text-decoration:none;">
-             ${registro.razon_social_emisor ?? ''}
-          </a>
-        </td>
+<td style="max-width:180px;">
+  <div style="display:flex; flex-direction:column;">
+    <span style="font-weight:600; color:#0c6cbd;">${registro.uuid ?? ''}</span>
+
+    <button onclick="subirFoto('${registro.uuid}')" 
+      style="margin-top:3px; background:#0066cc; color:white; border:none;
+             padding:4px 8px; border-radius:5px; cursor:pointer; font-size:11px;">
+      📸 Tomar / Subir foto
+    </button>
+  </div>
+</td>
+
         <td>${registro.serie ?? ''}</td>
         <td>${registro.factura ?? ''}</td>
         <td>${registro.total?.toLocaleString("es-MX", { style: "currency", currency: "MXN" }) ?? ''}</td>
@@ -209,9 +215,16 @@ if (error) {
                  placeholder="DDMMAA"
                  style="border:none; outline:none; background:transparent; width:90px;">
         </td>
+        <td id="celdaFotos-${registro.uuid}" style="display:flex; gap:4px;">
+  <span style="font-size:10px; color:#777;">Cargando...</span>
+</td>
+
       `;
       tbody.appendChild(fila);
     });
+data.forEach(registro => {
+  cargarMiniFotos(registro.uuid);
+});
 
     /* ----------------------------------------
        7️⃣ BLOQUE 7: GUARDADO AUTOMÁTICO
@@ -305,6 +318,82 @@ if (error) {
       overlay.style.display = "none";
       setTimeout(() => tooltip.style.display = "none", 200);
     };
+  /* ... tu código ... */
+
+/* ---------- FUNCION SUBIR FOTO ---------- */
+
+window.subirFoto = function(uuid) {
+  const fileInput = document.getElementById("fileInputHidden");
+
+  fileInput.value = "";
+
+  fileInput.onchange = async () => {
+    const archivo = fileInput.files[0];
+    if (!archivo) return;
+
+    const nombre = `${uuid}/${Date.now()}_${archivo.name}`;
+
+    const { error } = await supabase.storage
+      .from("gastos_medicos_fotos")
+      .upload(nombre, archivo, {
+        cacheControl: "3600",
+        upsert: false
+      });
+
+    if (error) {
+      alert("❌ Error al subir la foto");
+      console.error(error);
+      return;
+    }
+
+    alert("📸 Foto subida correctamente");
+    cargarMiniFotos(uuid);
+  };
+
+  fileInput.click();
+};
+async function cargarMiniFotos(uuid) {
+  const celda = document.getElementById(`celdaFotos-${uuid}`);
+  if (!celda) return;
+
+  celda.innerHTML = "Cargando...";
+
+  const { data: archivos, error } = await supabase.storage
+    .from("gastos_medicos_fotos")
+    .list(uuid + "/", { limit: 100 });
+
+  if (error) {
+    celda.innerHTML = "<span style='color:red;'>Error</span>";
+    console.error(error);
+    return;
+  }
+
+  celda.innerHTML = "";
+
+  if (!archivos || archivos.length === 0) {
+    celda.innerHTML = "<span style='font-size:10px;color:#777;'>Sin fotos</span>";
+    return;
+  }
+
+  archivos.forEach(a => {
+    const { data: urlData } = supabase.storage
+      .from("gastos_medicos_fotos")
+      .getPublicUrl(uuid + "/" + a.name);
+
+    const img = document.createElement("img");
+    img.src = urlData.publicUrl;
+    img.style.width = "40px";
+    img.style.height = "40px";
+    img.style.objectFit = "cover";
+    img.style.borderRadius = "4px";
+    img.style.cursor = "pointer";
+
+    img.onclick = () => window.open(urlData.publicUrl, "_blank");
+
+    celda.appendChild(img);
+  });
+}
+
   </script>
 
   <!-- =========================================================
@@ -324,6 +413,7 @@ if (error) {
       border-radius:6px;
       cursor:pointer;">Cerrar</button>
   </div>
+<input type="file" id="fileInputHidden" accept="image/*" capture="environment" style="display:none;">
 
 </body>
 </html>
