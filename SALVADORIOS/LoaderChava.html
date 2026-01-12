@@ -120,43 +120,56 @@ document.getElementById("xmlInput").addEventListener("change", async function ()
 });
 
 async function procesarArchivos() {
+  console.log("CLICK PROCESAR");
+  console.log("TOTAL ARCHIVOS:", archivosDatos.length);
+
   for (const data of archivosDatos) {
-    await fetch(`${SUPABASE_URL}/rest/v1/${TABLA}`, {
-      method: "POST",
-      headers: {
-        apikey: API_KEY,
-        Authorization: `Bearer ${API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        uuid_cfdi: data.uuid,
-        fecha: data.fecha,
-        periodo_mes: data.periodoMes,
-        periodo_anio: data.periodoAnio,
-        tipo_factura: data.tipoFactura,
-        rfc_emisor: data.emisorRFC,
-        razon_social_emisor: data.razonSocial,
-        rfc_receptor: data.receptorRFC,
-        razon_social_receptor: data.receptorNombre,
-        folio: data.folio,
-        serie: data.serie,
-        subtotal: data.subtotal,
-        descuento: data.descuento,
-        total: data.total,
-        moneda: data.moneda,
-        forma_pago: data.formaPago,
-        metodo_pago: data.metodoPago,
-        uso_cfdi: data.usoCFDI,
-        sello_sat: data.selloSAT,
-        no_certificado_sat: data.noCertificadoSAT,
-        fecha_certificacion: data.fecha_certificacion,
-        total_iva: data.totalIVA,
-        total_ieps: data.totalIEPS,
-        iva_detalle: data.ivaDetalle,
-        ieps_detalle: data.iepsDetalle,
-        conceptos: data.conceptos
-      })
-    });
+    const li = document.querySelector(`li[data-uuid="${data.uuid}"]`);
+    if (!li) continue;
+
+    li.querySelector("span").textContent = "→ Procesando...";
+    li.querySelector("span").className = "pending";
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLA}`, {
+        method: "POST",
+        headers: {
+          apikey: API_KEY,
+          Authorization: `Bearer ${API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          uuid_cfdi: data.uuid,
+          fecha: data.fecha,
+          periodo_mes: data.periodoMes,
+          periodo_anio: data.periodoAnio,
+          tipo_factura: data.tipoFactura,
+          rfc_emisor: data.emisorRFC,
+          rfc_receptor: data.receptorRFC,
+          total: data.total
+        })
+      });
+
+      if (res.status === 201) {
+        li.querySelector("span").textContent = "✅ Insertado";
+        li.querySelector("span").className = "ok";
+
+      } else if (res.status === 409) {
+        li.querySelector("span").textContent = "⚠️ Ya existe";
+        li.querySelector("span").className = "warn";
+
+      } else {
+        const txt = await res.text();
+        li.querySelector("span").textContent = `❌ Error ${res.status}`;
+        li.querySelector("span").className = "err";
+        console.error("ERROR:", txt);
+      }
+
+    } catch (e) {
+      li.querySelector("span").textContent = "❌ Error de red";
+      li.querySelector("span").className = "err";
+      console.error(e);
+    }
   }
 }
 async function procesarArchivos() {
@@ -191,5 +204,6 @@ async function procesarArchivos() {
 
 </body>
 </html>
+
 
 
