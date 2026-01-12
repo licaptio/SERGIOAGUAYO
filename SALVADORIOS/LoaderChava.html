@@ -77,8 +77,9 @@ document.getElementById("xmlInput").addEventListener("change", async function ()
         continue;
       }
 
-      const fecha = comprobante.getAttribute("Fecha");
-      const fechaTimbrado = timbre.getAttribute("FechaTimbrado");
+      const fechaRaw = comprobante.getAttribute("Fecha");
+      const fechaRaw = comprobante.getAttribute("Fecha") || timbre.getAttribute("FechaTimbrado");
+      const fecha = new Date(fechaRaw).toISOString();
       const receptorRFC = receptor.getAttribute("Rfc") || "";
       const tipoFactura = receptorRFC === "XAXX010101000" ? "GLOBAL" : "INDIVIDUAL";
 
@@ -172,30 +173,6 @@ async function procesarArchivos() {
     }
   }
 }
-async function procesarArchivos() {
-  console.log("CLICK PROCESAR");
-  console.log("TOTAL ARCHIVOS:", archivosDatos.length);
-
-  for (const data of archivosDatos) {
-    console.log("ENVIANDO UUID:", data.uuid);
-
-    await fetch(`${SUPABASE_URL}/rest/v1/${TABLA}`, {
-      method: "POST",
-      headers: {
-        apikey: API_KEY,
-        Authorization: `Bearer ${API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        uuid_cfdi: data.uuid,
-        rfc_emisor: data.emisorRFC,
-        rfc_receptor: data.receptorRFC,
-        total: data.total
-      })
-    });
-  }
-}
-
 </script>
 
 <footer style="margin-top:40px;text-align:center;font-size:13px;color:#555;border-top:1px solid #ccc;padding:10px">
@@ -204,6 +181,7 @@ async function procesarArchivos() {
 
 </body>
 </html>
+
 
 
 
