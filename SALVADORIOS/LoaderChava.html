@@ -2,145 +2,103 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Loader CFDI 4.0 – SALVADOR RIOS QUEZADA · PROVSOFT</title>
+<title>Loader CFDI FULL SAT · PROVSOFT</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <style>
-body{font-family:Poppins,Arial,sans-serif;background:#f9fafb;padding:20px}
+body{font-family:Poppins,Arial;background:#f9f9f9;padding:20px}
 h2{color:#00416A}
 ul{list-style:none;padding:0}
 li{font-size:14px;margin-bottom:6px}
-.ok{color:#16a34a}
-.warn{color:#f59e0b}
-.err{color:#dc2626}
-.pending{color:#2563eb}
-footer{margin-top:40px;font-size:13px;color:#555;border-top:1px solid #ccc;padding-top:10px}
+.ok{color:green}
+.warn{color:orange}
+.err{color:red}
+.pending{color:blue}
 </style>
 </head>
 
 <body>
 
-<h2>📥 Loader CFDI 4.0 — SALVADOR RIOS QUEZADA</h2>
+<h2>CFDI Ingreso · RIQS740906PQ2 · FULL SAT</h2>
 
 <input type="file" id="xmlInput" accept=".xml" multiple>
 <button onclick="procesar()">Procesar y Subir</button>
 
-<h3>Archivos</h3>
 <ul id="lista"></ul>
 
 <script>
-/* ================= CONFIG ================= */
-const SUPABASE_URL = 'https://cvpbtjlupswbyxenugpz.supabase.co';
-const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY';
-const TABLA = 'ingresosriqs740906pq2';
-const RFC_VALIDO = 'RIQS740906PQ2';
+const SUPABASE_URL='https://cvpbtjlupswbyxenugpz.supabase.co';
+const API_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY';
+const TABLA='ingresosriqs740906pq2';
+const RFC_VALIDO='RIQS740906PQ2';
 
-let lote = [];
+let lote=[];
 
-/* ================= PRELOAD ================= */
 document.getElementById('xmlInput').addEventListener('change', async e=>{
-  lote = [];
-  lista.innerHTML = '';
-
+  lote=[];
+  lista.innerHTML='';
   for(const file of e.target.files){
     try{
-      const txt = await file.text();
-      const xml = new DOMParser().parseFromString(txt,'application/xml');
+      const xmlTxt=await file.text();
+      const xml=new DOMParser().parseFromString(xmlTxt,'application/xml');
 
-      const ns = 'http://www.sat.gob.mx/cfd/4';
-      const c = xml.getElementsByTagNameNS(ns,'Comprobante')[0];
-      const em = xml.getElementsByTagNameNS(ns,'Emisor')[0];
-      const re = xml.getElementsByTagNameNS(ns,'Receptor')[0];
-      const tfd = [...xml.getElementsByTagName('*')]
-        .find(n=>n.localName==='TimbreFiscalDigital');
+      const ns='http://www.sat.gob.mx/cfd/4';
+      const c=xml.getElementsByTagNameNS(ns,'Comprobante')[0];
+      const em=xml.getElementsByTagNameNS(ns,'Emisor')[0];
+      const re=xml.getElementsByTagNameNS(ns,'Receptor')[0];
+      const tfd=[...xml.getElementsByTagName('*')].find(n=>n.localName==='TimbreFiscalDigital');
 
       if(!c||!em||!re||!tfd) throw 'XML incompleto';
 
-      const uuid = tfd.getAttribute('UUID')?.toUpperCase();
-      const tipo = c.getAttribute('TipoDeComprobante');
-      const rfcEmisor = em.getAttribute('Rfc')?.toUpperCase();
-
+      const uuid=tfd.getAttribute('UUID')?.toUpperCase();
       if(!uuid) throw 'Sin UUID';
-      if(tipo!=='I') throw 'No es Ingreso';
-      if(rfcEmisor!==RFC_VALIDO) throw 'RFC inválido';
-      if(lote.some(x=>x.uuid_cfdi===uuid)) throw 'Duplicado en lote';
+      if(c.getAttribute('TipoDeComprobante')!=='I') throw 'No Ingreso';
+      if(em.getAttribute('Rfc')!==RFC_VALIDO) throw 'RFC distinto';
 
-      const fecha = new Date(
-        c.getAttribute('Fecha') || tfd.getAttribute('FechaTimbrado')
-      ).toISOString();
-
-      /* ===== CONCEPTOS + IMPUESTOS ===== */
-      let conceptos = [];
-      let totalIVA = 0;
-      let totalIEPS = 0;
-
-      xml.querySelectorAll('cfdi\\:Concepto, Concepto').forEach(con=>{
-        const imp = parseFloat(con.getAttribute('Importe')||0);
-        const concepto = {
-          cantidad: parseFloat(con.getAttribute('Cantidad')||1),
-          descripcion: con.getAttribute('Descripcion')||'',
-          importe: imp
-        };
-
-        con.querySelectorAll('cfdi\\:Traslado, Traslado').forEach(t=>{
-          const impuesto = t.getAttribute('Impuesto');
-          const importe = parseFloat(t.getAttribute('Importe')||0);
-          if(impuesto==='002') totalIVA += importe;
-          if(impuesto==='003') totalIEPS += importe;
-        });
-
-        conceptos.push(concepto);
-      });
+      const fecha=new Date(c.getAttribute('Fecha')).toISOString();
+      const conceptos=[...xml.getElementsByTagNameNS(ns,'Concepto')].map(cx=>({
+        cantidad:Number(cx.getAttribute('Cantidad')),
+        descripcion:cx.getAttribute('Descripcion'),
+        valor_unitario:Number(cx.getAttribute('ValorUnitario')),
+        importe:Number(cx.getAttribute('Importe'))
+      }));
 
       lote.push({
-        uuid_cfdi: uuid,
+        uuid_cfdi:uuid,
         fecha,
-        periodo_mes: fecha.slice(5,7),
-        periodo_anio: fecha.slice(0,4),
-        tipo_factura: re.getAttribute('Rfc')==='XAXX010101000'?'GLOBAL':'INDIVIDUAL',
-
-        rfc_emisor: rfcEmisor,
-        razon_social_emisor: em.getAttribute('Nombre'),
-
-        rfc_receptor: re.getAttribute('Rfc'),
-        razon_social_receptor: re.getAttribute('Nombre'),
-
-        serie: c.getAttribute('Serie'),
-        folio: c.getAttribute('Folio'),
-
-        subtotal: Number(c.getAttribute('SubTotal')||0),
-        descuento: Number(c.getAttribute('Descuento')||0),
-        total: Number(c.getAttribute('Total')||0),
-
-        moneda: c.getAttribute('Moneda'),
-        forma_pago: c.getAttribute('FormaPago'),
-        metodo_pago: c.getAttribute('MetodoPago'),
-        uso_cfdi: re.getAttribute('UsoCFDI'),
-
-        fecha_certificacion: tfd.getAttribute('FechaTimbrado')
-          ? new Date(tfd.getAttribute('FechaTimbrado')).toISOString()
-          : null,
-
-        total_iva: totalIVA,
-        total_ieps: totalIEPS,
+        fecha_certificacion:new Date(tfd.getAttribute('FechaTimbrado')).toISOString(),
+        periodo_mes:fecha.slice(5,7),
+        periodo_anio:fecha.slice(0,4),
+        tipo_factura:'INDIVIDUAL',
+        rfc_emisor:em.getAttribute('Rfc'),
+        razon_social_emisor:em.getAttribute('Nombre'),
+        rfc_receptor:re.getAttribute('Rfc'),
+        razon_social_receptor:re.getAttribute('Nombre'),
+        uso_cfdi:re.getAttribute('UsoCFDI'),
+        serie:c.getAttribute('Serie'),
+        folio:c.getAttribute('Folio'),
+        subtotal:Number(c.getAttribute('SubTotal')),
+        descuento:Number(c.getAttribute('Descuento')||0),
+        total:Number(c.getAttribute('Total')),
+        moneda:c.getAttribute('Moneda'),
+        forma_pago:c.getAttribute('FormaPago'),
+        metodo_pago:c.getAttribute('MetodoPago'),
+        total_iva:null,
+        total_ieps:null,
         conceptos
       });
 
       lista.innerHTML+=`<li data-u="${uuid}">📄 ${uuid} <span class="pending">→ Precargado</span></li>`;
-
-    }catch(err){
-      lista.innerHTML+=`<li class="err">❌ ${file.name} (${err})</li>`;
+    }catch(e){
+      lista.innerHTML+=`<li class="err">❌ ${file.name} (${e})</li>`;
     }
   }
 });
 
-/* ================= INSERT ================= */
 async function procesar(){
   for(const r of lote){
-    const span = document.querySelector(`li[data-u="${r.uuid_cfdi}"] span`);
-    span.textContent='→ Insertando…';
-
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLA}`,{
+    const li=document.querySelector(`li[data-u="${r.uuid_cfdi}"] span`);
+    li.textContent='→ Insertando…';
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/${TABLA}`,{
       method:'POST',
       headers:{
         apikey:API_KEY,
@@ -149,26 +107,11 @@ async function procesar(){
       },
       body:JSON.stringify(r)
     });
-
-    if(res.status===201){
-      span.textContent='✅ Insertado';
-      span.className='ok';
-    }else if(res.status===409){
-      span.textContent='⚠️ Ya existe';
-      span.className='warn';
-    }else{
-      span.textContent='❌ Error';
-      span.className='err';
-      console.error(await res.text());
-    }
+    li.textContent=res.status===201?'✅ Insertado':'❌ Error';
+    li.className=res.status===201?'ok':'err';
   }
 }
 </script>
 
-<footer>
-⚙️ POWERED BY <b>PROVSOFT</b> · 2026 · Loader CFDI 4.0 FULL SAT
-</footer>
-
 </body>
 </html>
-
