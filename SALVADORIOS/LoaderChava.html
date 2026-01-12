@@ -15,33 +15,30 @@ li{font-size:14px;margin-bottom:6px}
 .pending{color:blue}
 </style>
 </head>
-
 <body>
 
 <h2>CFDI Ingreso · RIQS740906PQ2 · FULL SAT</h2>
 
 <input type="file" id="xmlInput" accept=".xml" multiple>
 <button onclick="procesar()">Procesar y Subir</button>
-
 <ul id="lista"></ul>
 
 <script>
 const SUPABASE_URL='https://cvpbtjlupswbyxenugpz.supabase.co';
-const API_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY';
+const API_KEY='TU_API_KEY';
 const TABLA='ingresosriqs740906pq2';
 const RFC_VALIDO='RIQS740906PQ2';
 
 let lote=[];
 
-document.getElementById('xmlInput').addEventListener('change', async e=>{
-  lote=[];
-  lista.innerHTML='';
+xmlInput.addEventListener('change', async e=>{
+  lote=[]; lista.innerHTML='';
   for(const file of e.target.files){
     try{
       const xmlTxt=await file.text();
       const xml=new DOMParser().parseFromString(xmlTxt,'application/xml');
-
       const ns='http://www.sat.gob.mx/cfd/4';
+
       const c=xml.getElementsByTagNameNS(ns,'Comprobante')[0];
       const em=xml.getElementsByTagNameNS(ns,'Emisor')[0];
       const re=xml.getElementsByTagNameNS(ns,'Receptor')[0];
@@ -49,31 +46,28 @@ document.getElementById('xmlInput').addEventListener('change', async e=>{
 
       if(!c||!em||!re||!tfd) throw 'XML incompleto';
 
-      const uuid=tfd.getAttribute('UUID')?.toUpperCase();
-      if(!uuid) throw 'Sin UUID';
-      if(c.getAttribute('TipoDeComprobante')!=='I') throw 'No Ingreso';
       if(em.getAttribute('Rfc')!==RFC_VALIDO) throw 'RFC distinto';
+      if(c.getAttribute('TipoDeComprobante')!=='I') throw 'No Ingreso';
 
-      const fecha=new Date(c.getAttribute('Fecha')).toISOString();
       const conceptos=[...xml.getElementsByTagNameNS(ns,'Concepto')].map(cx=>({
+        clave_prod_serv:cx.getAttribute('ClaveProdServ'),
+        no_identificacion:cx.getAttribute('NoIdentificacion'),
         cantidad:Number(cx.getAttribute('Cantidad')),
+        clave_unidad:cx.getAttribute('ClaveUnidad'),
+        unidad:cx.getAttribute('Unidad'),
         descripcion:cx.getAttribute('Descripcion'),
         valor_unitario:Number(cx.getAttribute('ValorUnitario')),
-        importe:Number(cx.getAttribute('Importe'))
+        importe:Number(cx.getAttribute('Importe')),
+        descuento:Number(cx.getAttribute('Descuento')||0),
+        objeto_impuesto:cx.getAttribute('ObjetoImp')
       }));
 
       lote.push({
-        uuid_cfdi:uuid,
-        fecha,
+        uuid_cfdi:tfd.getAttribute('UUID'),
+        fecha:new Date(c.getAttribute('Fecha')).toISOString(),
         fecha_certificacion:new Date(tfd.getAttribute('FechaTimbrado')).toISOString(),
-        periodo_mes:fecha.slice(5,7),
-        periodo_anio:fecha.slice(0,4),
-        tipo_factura:'INDIVIDUAL',
-        rfc_emisor:em.getAttribute('Rfc'),
-        razon_social_emisor:em.getAttribute('Nombre'),
-        rfc_receptor:re.getAttribute('Rfc'),
-        razon_social_receptor:re.getAttribute('Nombre'),
-        uso_cfdi:re.getAttribute('UsoCFDI'),
+        periodo_mes:c.getAttribute('Fecha').slice(5,7),
+        periodo_anio:c.getAttribute('Fecha').slice(0,4),
         serie:c.getAttribute('Serie'),
         folio:c.getAttribute('Folio'),
         subtotal:Number(c.getAttribute('SubTotal')),
@@ -82,14 +76,34 @@ document.getElementById('xmlInput').addEventListener('change', async e=>{
         moneda:c.getAttribute('Moneda'),
         forma_pago:c.getAttribute('FormaPago'),
         metodo_pago:c.getAttribute('MetodoPago'),
-        total_iva:null,
-        total_ieps:null,
+
+        emisor:{
+          rfc:em.getAttribute('Rfc'),
+          nombre:em.getAttribute('Nombre'),
+          regimen:em.getAttribute('RegimenFiscal')
+        },
+
+        receptor:{
+          rfc:re.getAttribute('Rfc'),
+          nombre:re.getAttribute('Nombre'),
+          uso_cfdi:re.getAttribute('UsoCFDI'),
+          regimen:re.getAttribute('RegimenFiscalReceptor'),
+          cp:re.getAttribute('DomicilioFiscalReceptor')
+        },
+
+        comprobante:Object.fromEntries([...c.attributes].map(a=>[a.name,a.value])),
+        timbre:Object.fromEntries([...tfd.attributes].map(a=>[a.name,a.value])),
+
+        sello_cfdi:c.getAttribute('Sello'),
+        no_certificado:c.getAttribute('NoCertificado'),
+        certificado_sat:tfd.getAttribute('NoCertificadoSAT'),
+        xml_original:xmlTxt,
         conceptos
       });
 
-      lista.innerHTML+=`<li data-u="${uuid}">📄 ${uuid} <span class="pending">→ Precargado</span></li>`;
-    }catch(e){
-      lista.innerHTML+=`<li class="err">❌ ${file.name} (${e})</li>`;
+      lista.innerHTML+=`<li data-u="${tfd.getAttribute('UUID')}">📄 ${tfd.getAttribute('UUID')} <span class="pending">→ Precargado</span></li>`;
+    }catch(err){
+      lista.innerHTML+=`<li class="err">❌ ${file.name} (${err})</li>`;
     }
   }
 });
