@@ -2,117 +2,65 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Representación CFDI – SALVADOR RIOS QUEZADA · PROVSOFT</title>
+<title>Factura CFDI – PROVSOFT</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 body{
-  font-family: Arial, sans-serif;
-  background:#e5e5e5;
+  font-family:Poppins,Arial,sans-serif;
+  background:#eef1f5;
   padding:30px;
 }
-
 .cfdi{
   background:#fff;
   max-width:980px;
   margin:auto;
   padding:30px;
-  border:1px solid #999;
+  border-radius:14px;
+  box-shadow:0 10px 30px rgba(0,0,0,.12);
 }
-
-/* ===== HEADER ===== */
 .header{
   display:grid;
-  grid-template-columns: 220px 1fr;
+  grid-template-columns:1fr 1fr;
   gap:20px;
   border-bottom:2px solid #000;
-  padding-bottom:12px;
+  padding-bottom:14px;
 }
-
-.logo{
-  max-width:180px;
-  margin-bottom:10px;
-}
-
-.box{
+.block{
   font-size:13px;
 }
-
-.box strong{
-  font-size:14px;
-}
-
-.header-right{
-  text-align:right;
-  font-size:13px;
-}
-
-.header-right strong{
-  font-size:15px;
-}
-
-/* ===== SECCIONES ===== */
+.block strong{ font-size:14px }
+.right{ text-align:right }
 .section{
-  margin-top:20px;
+  margin-top:18px;
 }
-
 .section h3{
-  margin:6px 0 8px;
   font-size:14px;
   border-bottom:1px solid #000;
   padding-bottom:4px;
 }
-
-/* ===== TABLAS ===== */
 table{
   width:100%;
   border-collapse:collapse;
   font-size:13px;
 }
-
 th,td{
   border:1px solid #000;
   padding:6px;
 }
-
-th{
-  background:#f2f2f2;
-}
-
-.right-txt{
-  text-align:right;
-}
-
-/* ===== TOTALES ===== */
+th{ background:#f2f2f2 }
 .totales{
-  width:340px;
+  width:360px;
   margin-left:auto;
   margin-top:16px;
 }
-
-/* ===== FOOTER ===== */
 .footer{
-  margin-top:40px;
+  margin-top:30px;
   font-size:11px;
   text-align:center;
-  border-top:1px solid #999;
+  border-top:1px solid #aaa;
   padding-top:10px;
-  color:#333;
-}
-
-/* ===== PRINT ===== */
-@media print{
-  body{
-    background:#fff;
-    padding:0;
-  }
-  .cfdi{
-    border:none;
-    margin:0;
-    max-width:100%;
-  }
 }
 </style>
 </head>
@@ -122,84 +70,62 @@ th{
 <div class="cfdi" id="cfdi">Cargando CFDI…</div>
 
 <script>
-/* ===== SUPABASE ===== */
 const db = supabase.createClient(
   'https://cvpbtjlupswbyxenugpz.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY'
+  'PUBLIC_ANON_KEY'
 );
 
-const TABLA = 'ingresosriqs740906pq2';
 const uuid = new URLSearchParams(location.search).get('uuid');
+const TABLA = 'ingresosriqs740906pq2';
 
-/* ===== HELPERS ===== */
-function fmt(n){
-  return Number(n ?? 0).toLocaleString('es-MX',{
-    minimumFractionDigits:2
-  });
-}
+const fmt = n => Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2});
+const fFecha = f => f ? f.replace('T',' ').replace('+00:00','') : '';
 
-function fmtFecha(f){
-  if(!f) return '';
-  return f.replace('T',' ').replace('+00:00','');
-}
-
-/* ===== LOAD ===== */
 async function cargar(){
   if(!uuid){
-    document.getElementById('cfdi').innerHTML = 'UUID no especificado';
+    cfdi.innerHTML='UUID no especificado';
     return;
   }
 
-  const { data, error } = await db
+  const {data,error} = await db
     .from(TABLA)
     .select('*')
-    .eq('uuid_cfdi', uuid)
+    .eq('uuid_cfdi',uuid)
     .single();
 
   if(error || !data){
-    document.getElementById('cfdi').innerHTML = 'CFDI no encontrado';
+    cfdi.innerHTML='CFDI no encontrado';
     return;
   }
 
   render(data);
 }
 
-/* ===== RENDER ===== */
 function render(f){
-  document.getElementById('cfdi').innerHTML = `
-  
-  <!-- HEADER -->
+  cfdi.innerHTML=`
   <div class="header">
-
-    <!-- EMISOR -->
-    <div class="box">
+    <div class="block">
       <strong>${f.razon_social_emisor || 'SALVADOR RIOS QUEZADA'}</strong><br>
-      <strong>RFC:</strong> ${f.rfc_emisor}<br>
-      <strong>Régimen Fiscal:</strong> 612 - Personas Físicas con Actividades Empresariales<br>
+      RFC: ${f.rfc_emisor}<br>
+      Régimen Fiscal: Personas Físicas con Actividades Empresariales
     </div>
 
-    <!-- DATOS CFDI -->
-    <div class="box header-right">
-      <strong>FACTURA</strong><br><br>
-      Serie / Folio: <strong>${f.serie || ''} ${f.folio || ''}</strong><br>
-      UUID: ${f.uuid_cfdi}<br>
-      Fecha de emisión:<br>
-      ${fmtFecha(f.fecha)}<br>
-      Tipo CFDI: Ingreso<br>
-      Moneda: ${f.moneda || 'MXN'}
+    <div class="block right">
+      <strong>FACTURA CFDI 4.0</strong><br><br>
+      Serie: ${f.serie || ''}<br>
+      Folio: ${f.folio || ''}<br>
+      UUID:<br>${f.uuid_cfdi}<br>
+      Fecha emisión:<br>${fFecha(f.fecha)}
     </div>
-
   </div>
 
-  <!-- RECEPTOR -->
   <div class="section">
     <h3>Datos del Receptor</h3>
-    <strong>${f.razon_social_receptor || ''}</strong><br>
-    RFC: ${f.rfc_receptor || ''}<br>
-    Uso CFDI: ${f.uso_cfdi || ''}
+    <strong>${f.razon_social_receptor}</strong><br>
+    RFC: ${f.rfc_receptor}<br>
+    Uso CFDI: ${f.uso_cfdi}
   </div>
 
-  <!-- CONCEPTOS -->
   <div class="section">
     <h3>Conceptos</h3>
     <table>
@@ -207,44 +133,35 @@ function render(f){
         <tr>
           <th>Cant.</th>
           <th>Descripción</th>
-          <th class="right-txt">Importe</th>
+          <th>Importe</th>
         </tr>
       </thead>
       <tbody>
         ${
-          (f.conceptos && f.conceptos.length)
+          f.conceptos?.length
           ? f.conceptos.map(c=>`
             <tr>
-              <td>${c.cantidad ?? 1}</td>
-              <td>${c.descripcion ?? ''}</td>
-              <td class="right-txt">$ ${fmt(c.importe)}</td>
+              <td>${c.cantidad||1}</td>
+              <td>${c.descripcion||''}</td>
+              <td>$ ${fmt(c.importe)}</td>
             </tr>
           `).join('')
-          : `
-            <tr>
-              <td colspan="3" style="text-align:center;color:#666">
-                Sin desglose de conceptos
-              </td>
-            </tr>`
+          : `<tr><td colspan="3" style="text-align:center">Sin desglose</td></tr>`
         }
       </tbody>
     </table>
   </div>
 
-  <!-- TOTALES -->
   <table class="totales">
-    <tr><td>Subtotal</td><td class="right-txt">$ ${fmt(f.subtotal)}</td></tr>
-    <tr><td>IVA</td><td class="right-txt">$ ${fmt(f.total_iva)}</td></tr>
-    <tr><td>IEPS</td><td class="right-txt">$ ${fmt(f.total_ieps)}</td></tr>
-    <tr><th>Total</th><th class="right-txt">$ ${fmt(f.total)}</th></tr>
+    <tr><td>Subtotal</td><td>$ ${fmt(f.subtotal)}</td></tr>
+    <tr><td>IVA</td><td>$ ${fmt(f.total_iva)}</td></tr>
+    <tr><td>IEPS</td><td>$ ${fmt(f.total_ieps)}</td></tr>
+    <tr><th>Total</th><th>$ ${fmt(f.total)}</th></tr>
   </table>
 
-  <!-- FOOTER -->
   <div class="footer">
-    <strong>Este documento es una representación impresa de un CFDI</strong><br>
-    Powered by <strong>PROVSOFT</strong> © 2026
-  </div>
-  `;
+    Representación impresa de un CFDI · PROVSOFT 2026
+  </div>`;
 }
 
 cargar();
