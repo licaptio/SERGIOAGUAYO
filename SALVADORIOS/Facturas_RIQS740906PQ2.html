@@ -202,12 +202,12 @@ function render(rows){
 <tr>
 <td>${fmtFecha(r.fecha)}</td>
 <td title="${r.uuid_cfdi}">
-<a href="factdetalle.html?uuid=${r.uuid_cfdi}" target="_blank">
-     style="color:#0c6cbd;font-weight:600;text-decoration:none">
-    ${r.uuid_cfdi.slice(0,16)}…
-  </a>
+<a href="factdetalle.html?uuid=${r.uuid_cfdi}"
+   target="_blank"
+   style="color:#0c6cbd;font-weight:600;text-decoration:none">
+  ${r.uuid_cfdi.slice(0,16)}…
+</a>
 </td>
-
 <td>${r.rfc_receptor||''}</td>
 <td>${r.razon_social_receptor||'<span class="muted">—</span>'}</td>
 <td>${(r.serie||'')}${r.folio?'-'+r.folio:''}</td>
