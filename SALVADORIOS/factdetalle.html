@@ -2,8 +2,9 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Factura CFDI – PROVSOFT</title>
+<title>Factura CFDI 4.0 · PROVSOFT</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -29,16 +30,18 @@ body{
 }
 .block{
   font-size:13px;
+  line-height:1.5;
 }
 .block strong{ font-size:14px }
 .right{ text-align:right }
 .section{
-  margin-top:18px;
+  margin-top:20px;
 }
 .section h3{
   font-size:14px;
   border-bottom:1px solid #000;
   padding-bottom:4px;
+  margin-bottom:6px;
 }
 table{
   width:100%;
@@ -61,7 +64,9 @@ th{ background:#f2f2f2 }
   text-align:center;
   border-top:1px solid #aaa;
   padding-top:10px;
+  color:#333;
 }
+.muted{ color:#777 }
 </style>
 </head>
 
@@ -70,16 +75,23 @@ th{ background:#f2f2f2 }
 <div class="cfdi" id="cfdi">Cargando CFDI…</div>
 
 <script>
+/* ================= SUPABASE ================= */
 const db = supabase.createClient(
   'https://cvpbtjlupswbyxenugpz.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY'
 );
-const uuid = new URLSearchParams(location.search).get('uuid');
+
 const TABLA = 'ingresosriqs740906pq2';
+const uuid = new URLSearchParams(location.search).get('uuid');
 
-const fmt = n => Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2});
-const fFecha = f => f ? f.replace('T',' ').replace('+00:00','') : '';
+/* ================= HELPERS ================= */
+const fmt = n =>
+  Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2});
 
+const fFecha = f =>
+  f ? f.replace('T',' ').replace('+00:00','') : '';
+
+/* ================= LOAD ================= */
 async function cargar(){
   if(!uuid){
     cfdi.innerHTML='UUID no especificado';
@@ -100,31 +112,35 @@ async function cargar(){
   render(data);
 }
 
+/* ================= RENDER ================= */
 function render(f){
-  cfdi.innerHTML=`
+  cfdi.innerHTML = `
+  <!-- HEADER -->
   <div class="header">
     <div class="block">
       <strong>${f.razon_social_emisor || 'SALVADOR RIOS QUEZADA'}</strong><br>
-      RFC: ${f.rfc_emisor}<br>
+      RFC: ${f.rfc_emisor || 'RIQS740906PQ2'}<br>
       Régimen Fiscal: Personas Físicas con Actividades Empresariales
     </div>
 
     <div class="block right">
       <strong>FACTURA CFDI 4.0</strong><br><br>
-      Serie: ${f.serie || ''}<br>
-      Folio: ${f.folio || ''}<br>
+      Serie: ${f.serie || '—'}<br>
+      Folio: ${f.folio || '—'}<br>
       UUID:<br>${f.uuid_cfdi}<br>
       Fecha emisión:<br>${fFecha(f.fecha)}
     </div>
   </div>
 
+  <!-- RECEPTOR -->
   <div class="section">
     <h3>Datos del Receptor</h3>
-    <strong>${f.razon_social_receptor}</strong><br>
-    RFC: ${f.rfc_receptor}<br>
-    Uso CFDI: ${f.uso_cfdi}
+    <strong>${f.razon_social_receptor || '—'}</strong><br>
+    RFC: ${f.rfc_receptor || '—'}<br>
+    Uso CFDI: ${f.uso_cfdi || '—'}
   </div>
 
+  <!-- CONCEPTOS -->
   <div class="section">
     <h3>Conceptos</h3>
     <table>
@@ -137,20 +153,25 @@ function render(f){
       </thead>
       <tbody>
         ${
-          f.conceptos?.length
+          Array.isArray(f.conceptos) && f.conceptos.length
           ? f.conceptos.map(c=>`
             <tr>
-              <td>${c.cantidad||1}</td>
-              <td>${c.descripcion||''}</td>
+              <td>${c.cantidad || 1}</td>
+              <td>${c.descripcion || ''}</td>
               <td>$ ${fmt(c.importe)}</td>
             </tr>
           `).join('')
-          : `<tr><td colspan="3" style="text-align:center">Sin desglose</td></tr>`
+          : `<tr>
+              <td colspan="3" style="text-align:center" class="muted">
+                Sin desglose de conceptos
+              </td>
+            </tr>`
         }
       </tbody>
     </table>
   </div>
 
+  <!-- TOTALES -->
   <table class="totales">
     <tr><td>Subtotal</td><td>$ ${fmt(f.subtotal)}</td></tr>
     <tr><td>IVA</td><td>$ ${fmt(f.total_iva)}</td></tr>
@@ -158,9 +179,11 @@ function render(f){
     <tr><th>Total</th><th>$ ${fmt(f.total)}</th></tr>
   </table>
 
+  <!-- FOOTER -->
   <div class="footer">
-    Representación impresa de un CFDI · PROVSOFT 2026
-  </div>`;
+    Representación impresa de un CFDI · <strong>PROVSOFT</strong> 2026
+  </div>
+  `;
 }
 
 cargar();
