@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Facturas por Rango – SALVADOR RIOS QUEZADA · PROVSOFT</title>
+<title>Ingresos – SALVADOR RIOS QUEZADA · PROVSOFT</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -52,7 +52,7 @@ th,td{
   border-bottom:1px solid #eee;
 }
 th{background:#f0f3f9}
-.monto{font-weight:600;text-align:right}
+.monto{text-align:right;font-weight:600}
 .muted{color:#888;font-size:12px}
 .pagination{
   margin-top:18px;
@@ -65,7 +65,7 @@ th{background:#f0f3f9}
 
 <body>
 
-<h2>📄 Facturas por Rango — <b>SALVADOR RIOS QUEZADA</b></h2>
+<h2>📄 Ingresos — <b>SALVADOR RIOS QUEZADA</b></h2>
 
 <div class="controls">
   <input type="date" id="fecha_inicio">
@@ -96,6 +96,7 @@ th{background:#f0f3f9}
 </div>
 
 <script>
+/* ===== SUPABASE ===== */
 const db = supabase.createClient(
   'https://cvpbtjlupswbyxenugpz.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY'
@@ -105,6 +106,7 @@ const TABLA = 'ingresosriqs740906pq2';
 let page = 0;
 const limit = 50;
 
+/* ===== HELPERS ===== */
 function fmt(n){
   return Number(n||0).toLocaleString('es-MX',{style:'currency',currency:'MXN'});
 }
@@ -118,17 +120,19 @@ function rangoUTC(fi,ff){
   }
 }
 
+/* ===== BUSCAR ===== */
 function buscar(){
   page = 0;
   cargar();
 }
 
+/* ===== CARGAR ===== */
 async function cargar(){
-  const fi=document.getElementById('fecha_inicio').value;
-  const ff=document.getElementById('fecha_fin').value;
+  const fi=fecha_inicio.value;
+  const ff=fecha_fin.value;
   if(!fi||!ff){ alert('Selecciona rango'); return; }
 
-  document.getElementById('loading').style.display='block';
+  loading.style.display='block';
   const {ini,fin}=rangoUTC(fi,ff);
 
   const {data,error}=await db
@@ -147,26 +151,29 @@ async function cargar(){
     .order('fecha',{ascending:false})
     .range(page*limit,page*limit+limit-1);
 
-  document.getElementById('loading').style.display='none';
+  loading.style.display='none';
   if(error){ alert(error.message); return; }
 
   render(data);
-  document.getElementById('pagina').innerText = `Página ${page+1}`;
+  pagina.innerText = `Página ${page+1}`;
 }
 
+/* ===== RENDER ===== */
 function render(rows){
-  const t=document.getElementById('tabla');
-  t.innerHTML='';
+  tabla.innerHTML='';
 
   if(!rows || rows.length===0){
-    t.innerHTML=`<tr><td colspan="6" style="text-align:center;color:#777;padding:20px">
-      📭 Sin registros en este rango
-    </td></tr>`;
+    tabla.innerHTML=`
+      <tr>
+        <td colspan="6" style="text-align:center;color:#777;padding:20px">
+          📭 Sin registros en este rango
+        </td>
+      </tr>`;
     return;
   }
 
   rows.forEach(r=>{
-    t.innerHTML+=`
+    tabla.innerHTML+=`
 <tr>
 <td>${fmtFecha(r.fecha)}</td>
 <td title="${r.uuid_cfdi}">${r.uuid_cfdi.slice(0,16)}…</td>
@@ -178,10 +185,12 @@ function render(rows){
   });
 }
 
+/* ===== PAGINACIÓN ===== */
 function next(){ page++; cargar(); }
 function prev(){ if(page>0){ page--; cargar(); } }
 
-(()=>{ 
+/* ===== FECHAS DEFAULT ===== */
+(()=>{
   const h=new Date();
   const i=new Date(h.getFullYear(),h.getMonth(),1);
   fecha_inicio.value=i.toISOString().slice(0,10);
