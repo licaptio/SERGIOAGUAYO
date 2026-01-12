@@ -77,9 +77,16 @@ document.getElementById("xmlInput").addEventListener("change", async function ()
         continue;
       }
 
-      const fechaRaw = comprobante.getAttribute("Fecha");
-      const fechaRaw = comprobante.getAttribute("Fecha") || timbre.getAttribute("FechaTimbrado");
-      const fecha = new Date(fechaRaw).toISOString();
+const fechaRaw =
+  comprobante.getAttribute("Fecha") ||
+  timbre.getAttribute("FechaTimbrado");
+
+if (!fechaRaw) throw new Error("CFDI sin fecha");
+
+const fecha = new Date(fechaRaw).toISOString();
+const fechaTimbrado = timbre?.getAttribute("FechaTimbrado")
+  ? new Date(timbre.getAttribute("FechaTimbrado")).toISOString()
+  : null;
       const receptorRFC = receptor.getAttribute("Rfc") || "";
       const tipoFactura = receptorRFC === "XAXX010101000" ? "GLOBAL" : "INDIVIDUAL";
 
@@ -181,6 +188,7 @@ async function procesarArchivos() {
 
 </body>
 </html>
+
 
 
 
