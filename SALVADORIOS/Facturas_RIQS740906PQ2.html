@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Facturas por Rango – SALVADOR RIOS QUEZADA · PROVSOFT</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+  font-family:'Poppins',Arial,sans-serif;
+  background:#eef1f5;
+  margin:0;
+  padding:30px;
+}
+h2{margin-bottom:12px}
+.controls{
+  background:#fff;
+  padding:15px;
+  border-radius:14px;
+  box-shadow:0 6px 18px rgba(0,0,0,.1);
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  margin-bottom:20px;
+}
+select,input,button{
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #ccc;
+}
+button{
+  background:#0c6cbd;
+  color:#fff;
+  font-weight:600;
+  cursor:pointer;
+  border:none;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:#fff;
+  border-radius:14px;
+  overflow:hidden;
+  box-shadow:0 10px 30px rgba(0,0,0,.12);
+}
+th,td{
+  padding:10px;
+  font-size:14px;
+  border-bottom:1px solid #eee;
+}
+th{background:#f0f3f9}
+.monto{font-weight:600}
+.pagination{
+  margin-top:18px;
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+</style>
+</head>
+
+<body>
+
+<h2>📄 Facturas por Rango — <b>SALVADOR RIOS QUEZADA</b></h2>
+
+<div class="controls">
+  <input type="date" id="fecha_inicio">
+  <input type="date" id="fecha_fin">
+  <button onclick="buscar()">Ejecutar</button>
+</div>
+
+<p id="loading" style="display:none;font-weight:600;">⏳ Cargando…</p>
+
+<table>
+<thead>
+<tr>
+  <th>Fecha</th>
+  <th>UUID</th>
+  <th>RFC Receptor</th>
+  <th>Cliente</th>
+  <th>Serie</th>
+  <th>Folio</th>
+  <th>Subtotal</th>
+  <th>IVA</th>
+  <th>IEPS</th>
+  <th>Total</th>
+  <th>Forma Pago</th>
+  <th>Método Pago</th>
+</tr>
+</thead>
+<tbody id="tabla"></tbody>
+</table>
+
+<div class="pagination">
+  <button onclick="prev()">⬅ Anterior</button>
+  <span id="pagina">Página 1</span>
+  <button onclick="next()">Siguiente ➡</button>
+</div>
+
+<script>
+const db = supabase.createClient(
+  'https://cvpbtjlupswbyxenugpz.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY'
+);
+
+const TABLA = 'ingresosriqs740906pq2';
+
+let page = 0;
+const limit = 50;
+
+function buscar(){
+  page = 0;
+  cargar();
+}
+
+function rangoUTC(fi,ff){
+  return{
+    ini:new Date(fi+'T00:00:00').toISOString(),
+    fin:new Date(ff+'T23:59:59').toISOString()
+  }
+}
+
+async function cargar(){
+  const fi=document.getElementById('fecha_inicio').value;
+  const ff=document.getElementById('fecha_fin').value;
+  if(!fi||!ff){
+    alert('Selecciona rango de fechas');
+    return;
+  }
+
+  document.getElementById('loading').style.display='block';
+
+  const {ini,fin}=rangoUTC(fi,ff);
+
+  const {data,error}=await db
+    .from(TABLA)
+    .select(`fecha,uuid_cfdi,rfc_receptor,razon_social_receptor,serie,folio,
+             subtotal,total_iva,total_ieps,total,forma_pago,metodo_pago`)
+    .gte('fecha',ini)
+    .lte('fecha',fin)
+    .order('fecha',{ascending:false})
+    .range(page*limit,page*limit+limit-1);
+
+  document.getElementById('loading').style.display='none';
+  if(error){alert(error.message);return;}
+
+  render(data);
+  document.getElementById('pagina').innerText=`Página ${page+1}`;
+}
+
+function render(rows){
+  const t=document.getElementById('tabla');
+  t.innerHTML='';
+  rows.forEach(r=>{
+    t.innerHTML+=`
+<tr>
+<td>${r.fecha.replace('T',' ').replace('+00:00','')}</td>
+<td>${r.uuid_cfdi.slice(0,16)}…</td>
+<td>${r.rfc_receptor||''}</td>
+<td>${r.razon_social_receptor||''}</td>
+<td>${r.serie||''}</td>
+<td>${r.folio||''}</td>
+<td class="monto">${fmt(r.subtotal)}</td>
+<td class="monto">${fmt(r.total_iva)}</td>
+<td class="monto">${fmt(r.total_ieps)}</td>
+<td class="monto">${fmt(r.total)}</td>
+<td>${fp(r.forma_pago)}</td>
+<td>${mp(r.metodo_pago)}</td>
+</tr>`;
+  });
+}
+
+function fmt(n){
+  return Number(n||0).toLocaleString('es-MX',{style:'currency',currency:'MXN'});
+}
+function fp(v){
+  return{'01':'Efectivo','02':'Cheque','03':'Transferencia','04':'Crédito','28':'Débito','99':'Por definir'}[v]||v||'';
+}
+function mp(v){
+  return{'PUE':'Una exhibición','PPD':'Parcialidades'}[v]||v||'';
+}
+function next(){page++;cargar()}
+function prev(){if(page>0){page--;cargar()}}
+</script>
+
+<footer style="margin-top:30px;text-align:center;font-size:13px;color:#555;">
+⚙️ POWERED BY <b>PROVSOFT</b> · 2026
+</footer>
+
+</body>
+</html>
