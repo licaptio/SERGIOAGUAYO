@@ -207,13 +207,6 @@ else {
   item.querySelector('span').className = 'err';
   logBitacora(`❌ Error al subir: ${err}`);
 }
-
-        } else {
-          const err = await insert.text();
-          item.querySelector('span').textContent = `❌ Error: ${err}`;
-          item.querySelector('span').className = 'err';
-          logBitacora(`❌ Error al subir: ${err}`);
-        }
       }
     }
 
@@ -224,4 +217,5 @@ else {
   </script>
 </body>
 </html>
+
 
