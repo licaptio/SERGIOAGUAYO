@@ -113,23 +113,25 @@ if (tipo !== 'I' && tipo !== 'E') {
             });
           }
 
-          archivosDatos.push({
-            uuid,
-            tipo,
-            receptorRFC,
-            nombreReceptor,
-            emisorRFC,
-            razonSocial,
-            folio,
-            serie,
-            total,
-            fecha,
-            fecha_certificacion: fechaTimbrado,
-            conceptosDetalle
-          });
+archivosDatos.push({
+  uuid,
+  tipo,
+  receptorRFC,
+  nombreReceptor,
+  emisorRFC,
+  razonSocial,
+  folio,
+  serie,
+  total,
+  fecha,
+  fecha_certificacion: fechaTimbrado,
+  conceptosDetalle,
+  estado: 'VALIDADO'
+});
+
 
           const li = document.createElement('li');
-          li.innerHTML = `📄 <b>${uuid}</b> <span class="pending">→ Precargado</span>`;
+          li.innerHTML = `📄 <b>${uuid}</b> <span class="pending">VALIDADO</span>`;
           lista.appendChild(li);
         } catch (e) {
           const li = document.createElement('li');
@@ -148,19 +150,6 @@ if (tipo !== 'I' && tipo !== 'E') {
 
         logBitacora(`📄 Revisando UUID: ${data.uuid}`);
 
-if (data.receptorRFC !== RFC_RECEPTOR_PERMITIDO) {
-  item.querySelector('span').textContent = `❌ Receptor NO permitido`;
-  item.querySelector('span').className = 'err';
-  logBitacora(`❌ Rechazado receptor: ${data.receptorRFC}`);
-  continue;
-}
-
-if (data.tipo !== 'I' && data.tipo !== 'E') {
-  item.querySelector('span').textContent = `❌ Tipo ${data.tipo} no permitido`;
-  item.querySelector('span').className = 'err';
-  logBitacora(`❌ Rechazado tipo: ${data.tipo}`);
-  continue;
-}
 
         const datosInsert = {
           uuid: data.uuid,
@@ -192,21 +181,22 @@ const insert = await fetch(`${SUPABASE_URL}/rest/v1/${TABLA_EGRESOS}?on_conflict
 });
 
 if (insert.status === 201) {
-  item.querySelector('span').textContent = `✅ Subido`;
+  item.querySelector('span').textContent = `✅ CARGADO EN BD`;
   item.querySelector('span').className = 'ok';
-  logBitacora(`✔️ Insertado correctamente`);
-} 
+  logBitacora(`✔️ ${data.uuid} → CARGADO EN BD`);
+}
 else if (insert.status === 204) {
-  item.querySelector('span').textContent = `⚠️ Ya existía`;
+  item.querySelector('span').textContent = `⚠️ IGNORADO – YA EXISTE`;
   item.querySelector('span').className = 'warn';
-  logBitacora(`⚠️ UUID duplicado (no insertado)`);
-} 
+  logBitacora(`⚠️ ${data.uuid} → YA EXISTE EN BD`);
+}
 else {
   const err = await insert.text();
-  item.querySelector('span').textContent = `❌ Error: ${err}`;
+  item.querySelector('span').textContent = `❌ ERROR`;
   item.querySelector('span').className = 'err';
-  logBitacora(`❌ Error al subir: ${err}`);
+  logBitacora(`❌ ${data.uuid} → ERROR: ${err}`);
 }
+
       }
     }
 
@@ -217,5 +207,6 @@ else {
   </script>
 </body>
 </html>
+
 
 
