@@ -66,18 +66,23 @@ if (!uuid || !tipo || !receptorRFC) {
   throw new Error("XML incompleto (UUID / Tipo / Receptor)");
 }
 
+let estado = 'VALIDO';
+let motivo = '';
+
 if (receptorRFC !== RFC_RECEPTOR_PERMITIDO) {
-  const li = document.createElement('li');
-  li.innerHTML = `⛔ <b>${uuid || file.name}</b> <span class="err">→ Receptor NO permitido</span>`;
-  lista.appendChild(li);
-  continue;
+  estado = 'NO_PERMITIDO';
+  motivo = 'Receptor NO permitido';
 }
 
 if (tipo !== 'I' && tipo !== 'E') {
-  const li = document.createElement('li');
-  li.innerHTML = `⛔ <b>${uuid}</b> <span class="err">→ Tipo no permitido (${tipo})</span>`;
-  lista.appendChild(li);
-  continue;
+  estado = 'NO_PERMITIDO';
+  motivo = `Tipo no permitido (${tipo})`;
+}
+if (data.estado !== 'VALIDO') {
+  item.querySelector('span').textContent = `⛔ ${data.motivo}`;
+  item.querySelector('span').className = 'err';
+  logBitacora(`⛔ ${data.uuid} → ${data.motivo}`);
+  continue; // ⛔ NO llega a Supabase
 }
 
 
@@ -126,12 +131,18 @@ archivosDatos.push({
   fecha,
   fecha_certificacion: fechaTimbrado,
   conceptosDetalle,
-  estado: 'VALIDADO'
+  estado,
+  motivo
 });
 
 
           const li = document.createElement('li');
-          li.innerHTML = `📄 <b>${uuid}</b> <span class="pending">VALIDADO</span>`;
+          if (estado === 'VALIDO') {
+  li.innerHTML = `📄 <b>${uuid}</b> <span class="pending">VALIDADO</span>`;
+} else {
+  li.innerHTML = `⛔ <b>${uuid}</b> <span class="err">${motivo}</span>`;
+}
+
           lista.appendChild(li);
         } catch (e) {
           const li = document.createElement('li');
@@ -215,7 +226,4 @@ if (Array.isArray(resp) && resp.length === 1) {
   </script>
 </body>
 </html>
-
-
-
 
