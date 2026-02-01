@@ -14,7 +14,7 @@
   </style>
 </head>
 <body>
-  <h2>Subir CFDI válidos (solo tipo I o E y receptor AUPS540605TF0)</h2>
+  <h2>Subir EGRESOS (CFDI donde receptor = AUPS540605TF0)</h2>
   <input type="file" id="xmlInput" accept=".xml" multiple>
   <button onclick="procesarArchivos()">Procesar y Subir</button>
 
@@ -24,6 +24,8 @@
   <pre id="bitacora" style="background:#eee; padding:10px; max-height:200px; overflow:auto; font-size:13px;"></pre>
 
   <script>
+    const RFC_RECEPTOR_PERMITIDO = "AUPS540605TF0";
+    const TABLA_EGRESOS = "xml_inge_sergio_e";
     const SUPABASE_URL = "https://cvpbtjlupswbyxenugpz.supabase.co";
     const API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY";
 
@@ -59,6 +61,25 @@
           const total = parseFloat(comprobante?.getAttribute("Total")) || 0;
           const fecha = comprobante?.getAttribute("Fecha");
           const fechaTimbrado = timbre?.getAttribute("FechaTimbrado") || null;
+          // 🔒 Blindaje temprano (precarga)
+if (!uuid || !tipo || !receptorRFC) {
+  throw new Error("XML incompleto (UUID / Tipo / Receptor)");
+}
+
+if (receptorRFC !== RFC_RECEPTOR_PERMITIDO) {
+  const li = document.createElement('li');
+  li.innerHTML = `⛔ <b>${uuid || file.name}</b> <span class="err">→ Receptor NO permitido</span>`;
+  lista.appendChild(li);
+  continue;
+}
+
+if (tipo !== 'I' && tipo !== 'E') {
+  const li = document.createElement('li');
+  li.innerHTML = `⛔ <b>${uuid}</b> <span class="err">→ Tipo no permitido (${tipo})</span>`;
+  lista.appendChild(li);
+  continue;
+}
+
 
           let conceptosDetalle = [];
           const conceptos = xml.getElementsByTagNameNS(cfdiNS, "Concepto");
@@ -127,33 +148,19 @@
 
         logBitacora(`📄 Revisando UUID: ${data.uuid}`);
 
-        if (data.tipo !== 'I' && data.tipo !== 'E') {
-          item.querySelector('span').textContent = `❌ Tipo ${data.tipo} no válido`;
-          item.querySelector('span').className = 'err';
-          logBitacora(`❌ Rechazado por tipo: ${data.tipo}`);
-          continue;
-        }
+if (data.receptorRFC !== RFC_RECEPTOR_PERMITIDO) {
+  item.querySelector('span').textContent = `❌ Receptor NO permitido`;
+  item.querySelector('span').className = 'err';
+  logBitacora(`❌ Rechazado receptor: ${data.receptorRFC}`);
+  continue;
+}
 
-        if (data.receptorRFC !== 'AUPS540605TF0') {
-          item.querySelector('span').textContent = `❌ RFC no permitido`;
-          item.querySelector('span').className = 'err';
-          logBitacora(`❌ Rechazado por RFC receptor: ${data.receptorRFC}`);
-          continue;
-        }
-
-        const existe = await fetch(`${SUPABASE_URL}/rest/v1/xml_inge_sergio?uuid=eq.${data.uuid}`, {
-          headers: {
-            apikey: API_KEY,
-            Authorization: `Bearer ${API_KEY}`
-          }
-        });
-        const yaExiste = await existe.json();
-        if (yaExiste.length > 0) {
-          item.querySelector('span').textContent = `⚠️ Ya existe`;
-          item.querySelector('span').className = 'warn';
-          logBitacora(`⚠️ Ya existía: ${data.uuid}`);
-          continue;
-        }
+if (data.tipo !== 'I' && data.tipo !== 'E') {
+  item.querySelector('span').textContent = `❌ Tipo ${data.tipo} no permitido`;
+  item.querySelector('span').className = 'err';
+  logBitacora(`❌ Rechazado tipo: ${data.tipo}`);
+  continue;
+}
 
         const datosInsert = {
           uuid: data.uuid,
@@ -168,19 +175,21 @@
           tipo: data.tipo,
           rfc_receptor: data.receptorRFC,
           nombre_receptor: data.nombreReceptor,
+          naturaleza: "EGRESO",
           fotos: []
         };
 
         logBitacora(`✅ Subiendo: ${data.uuid}`);
-        const insert = await fetch(`${SUPABASE_URL}/rest/v1/xml_inge_sergio`, {
-          method: 'POST',
-          headers: {
-            apikey: API_KEY,
-            Authorization: `Bearer ${API_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(datosInsert)
-        });
+const insert = await fetch(`${SUPABASE_URL}/rest/v1/${TABLA_EGRESOS}?on_conflict=uuid`, {
+  method: 'POST',
+  headers: {
+    apikey: API_KEY,
+    Authorization: `Bearer ${API_KEY}`,
+    'Content-Type': 'application/json',
+    'Prefer': 'resolution=ignore-duplicates,return=minimal'
+  },
+  body: JSON.stringify(datosInsert)
+});
 
         if (insert.ok) {
           item.querySelector('span').textContent = `✅ Subido`;
