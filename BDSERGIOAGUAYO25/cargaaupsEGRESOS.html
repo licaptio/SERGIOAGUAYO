@@ -78,13 +78,6 @@ if (tipo !== 'I' && tipo !== 'E') {
   estado = 'NO_PERMITIDO';
   motivo = `Tipo no permitido (${tipo})`;
 }
-if (data.estado !== 'VALIDO') {
-  item.querySelector('span').textContent = `⛔ ${data.motivo}`;
-  item.querySelector('span').className = 'err';
-  logBitacora(`⛔ ${data.uuid} → ${data.motivo}`);
-  continue; // ⛔ NO llega a Supabase
-}
-
 
           let conceptosDetalle = [];
           const conceptos = xml.getElementsByTagNameNS(cfdiNS, "Concepto");
@@ -117,6 +110,24 @@ if (data.estado !== 'VALIDO') {
               tasaImpuesto: impuestoTasa
             });
           }
+// 🔒 VALIDACIÓN TEMPRANA (SOLO DECIDE ESTADO)
+let estado = 'VALIDO';
+let motivo = '';
+
+if (!uuid || !tipo || !receptorRFC) {
+  estado = 'NO_PERMITIDO';
+  motivo = 'XML incompleto';
+}
+
+if (receptorRFC !== RFC_RECEPTOR_PERMITIDO) {
+  estado = 'NO_PERMITIDO';
+  motivo = 'Receptor NO permitido';
+}
+
+if (tipo !== 'I' && tipo !== 'E') {
+  estado = 'NO_PERMITIDO';
+  motivo = `Tipo no permitido (${tipo})`;
+}
 
 archivosDatos.push({
   uuid,
@@ -135,15 +146,16 @@ archivosDatos.push({
   motivo
 });
 
+const li = document.createElement('li');
 
-          const li = document.createElement('li');
-          if (estado === 'VALIDO') {
+if (estado === 'VALIDO') {
   li.innerHTML = `📄 <b>${uuid}</b> <span class="pending">VALIDADO</span>`;
 } else {
   li.innerHTML = `⛔ <b>${uuid}</b> <span class="err">${motivo}</span>`;
 }
 
-          lista.appendChild(li);
+lista.appendChild(li);
+
         } catch (e) {
           const li = document.createElement('li');
           li.innerHTML = `❌ <b>${file.name}</b> <span class="err">→ Error al leer</span>`;
@@ -154,6 +166,13 @@ archivosDatos.push({
 
     async function procesarArchivos() {
       const items = document.querySelectorAll('#archivoList li');
+// ⛔ SI NO ES VALIDO, NO VA A SUPABASE
+if (data.estado !== 'VALIDO') {
+  item.querySelector('span').textContent = `⛔ ${data.motivo}`;
+  item.querySelector('span').className = 'err';
+  logBitacora(`⛔ ${data.uuid} → ${data.motivo}`);
+  continue;
+}
 
       for (let i = 0; i < archivosDatos.length; i++) {
         const item = items[i];
@@ -226,4 +245,5 @@ if (Array.isArray(resp) && resp.length === 1) {
   </script>
 </body>
 </html>
+
 
