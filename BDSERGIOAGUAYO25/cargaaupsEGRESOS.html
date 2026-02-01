@@ -191,10 +191,23 @@ const insert = await fetch(`${SUPABASE_URL}/rest/v1/${TABLA_EGRESOS}?on_conflict
   body: JSON.stringify(datosInsert)
 });
 
-        if (insert.ok) {
-          item.querySelector('span').textContent = `✅ Subido`;
-          item.querySelector('span').className = 'ok';
-          logBitacora(`✔️ Subida exitosa`);
+if (insert.status === 201) {
+  item.querySelector('span').textContent = `✅ Subido`;
+  item.querySelector('span').className = 'ok';
+  logBitacora(`✔️ Insertado correctamente`);
+} 
+else if (insert.status === 204) {
+  item.querySelector('span').textContent = `⚠️ Ya existía`;
+  item.querySelector('span').className = 'warn';
+  logBitacora(`⚠️ UUID duplicado (no insertado)`);
+} 
+else {
+  const err = await insert.text();
+  item.querySelector('span').textContent = `❌ Error: ${err}`;
+  item.querySelector('span').className = 'err';
+  logBitacora(`❌ Error al subir: ${err}`);
+}
+
         } else {
           const err = await insert.text();
           item.querySelector('span').textContent = `❌ Error: ${err}`;
@@ -211,3 +224,4 @@ const insert = await fetch(`${SUPABASE_URL}/rest/v1/${TABLA_EGRESOS}?on_conflict
   </script>
 </body>
 </html>
+
