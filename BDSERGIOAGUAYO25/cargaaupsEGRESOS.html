@@ -28,6 +28,15 @@
     const TABLA_EGRESOS = "xml_inge_sergio_e";
     const SUPABASE_URL = "https://cvpbtjlupswbyxenugpz.supabase.co";
     const API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY";
+// ===============================
+// ⚙️ CONFIGURACIÓN DE CARGA SEGURA
+// ===============================
+const TAM_LOTE = 20;     // cuántos XML por bloque
+const PAUSA_MS = 500;   // pausa entre bloques (ms)
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
     let archivosDatos = [];
 
@@ -147,83 +156,95 @@ lista.appendChild(li);
       }
     });
 
-    async function procesarArchivos() {
-      const items = document.querySelectorAll('#archivoList li');
+async function procesarArchivos() {
+  const items = document.querySelectorAll('#archivoList li');
 
+  for (let i = 0; i < archivosDatos.length; i += TAM_LOTE) {
 
-      for (let i = 0; i < archivosDatos.length; i++) {
-        const item = items[i];
-        const data = archivosDatos[i];
+    const bloque = archivosDatos.slice(i, i + TAM_LOTE);
+    logBitacora(`🚚 Procesando bloque ${i + 1} a ${i + bloque.length}`);
 
-          // ==================================================
-  // ⛔ FILTRO FINAL: NO PERMITIDOS NO SUBEN A SUPABASE
-  // ==================================================
-  if (data.estado !== 'VALIDO') {
-    item.querySelector('span').textContent = `⛔ ${data.motivo}`;
-    item.querySelector('span').className = 'err';
-    logBitacora(`⛔ ${data.uuid} → ${data.motivo}`);
-    continue;
-  }
-  // ==================================================
-        logBitacora(`📄 Revisando UUID: ${data.uuid}`);
+    for (let j = 0; j < bloque.length; j++) {
+      const indexReal = i + j;
+      const item = items[indexReal];
+      const data = bloque[j];
 
+      // ⛔ FILTRO FINAL
+      if (data.estado !== 'VALIDO') {
+        item.querySelector('span').textContent = `⛔ ${data.motivo}`;
+        item.querySelector('span').className = 'err';
+        logBitacora(`⛔ ${data.uuid} → ${data.motivo}`);
+        continue;
+      }
 
-        const datosInsert = {
-          uuid: data.uuid,
-          fecha: data.fecha,
-          rfc_emisor: data.emisorRFC,
-          razon_social_emisor: data.razonSocial,
-          factura: data.folio,
-          serie: data.serie,
-          total: data.total,
-          conceptos_detalle: data.conceptosDetalle,
-          fecha_certificacion: data.fecha_certificacion,
-          tipo: data.tipo,
-          rfc_receptor: data.receptorRFC,
-          nombre_receptor: data.nombreReceptor,
-          naturaleza: "EGRESO",
-          fotos: []
-        };
+      logBitacora(`📄 Subiendo UUID: ${data.uuid}`);
 
-        logBitacora(`✅ Subiendo: ${data.uuid}`);
-const insert = await fetch(
-  `${SUPABASE_URL}/rest/v1/${TABLA_EGRESOS}?on_conflict=uuid&select=uuid`,
-  {
-    method: 'POST',
-    headers: {
-      apikey: API_KEY,
-      Authorization: `Bearer ${API_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'resolution=ignore-duplicates,return=representation'
-    },
-    body: JSON.stringify(datosInsert)
-  }
-);
+      const datosInsert = {
+        uuid: data.uuid,
+        fecha: data.fecha,
+        rfc_emisor: data.emisorRFC,
+        razon_social_emisor: data.razonSocial,
+        factura: data.folio,
+        serie: data.serie,
+        total: data.total,
+        conceptos_detalle: data.conceptosDetalle,
+        fecha_certificacion: data.fecha_certificacion,
+        tipo: data.tipo,
+        rfc_receptor: data.receptorRFC,
+        nombre_receptor: data.nombreReceptor,
+        naturaleza: "EGRESO",
+        fotos: []
+      };
 
-if (!insert.ok) {
-  const err = await insert.text();
-  item.querySelector('span').textContent = `❌ ERROR`;
-  item.querySelector('span').className = 'err';
-  logBitacora(`❌ ${data.uuid} → ERROR: ${err}`);
-  continue;
-}
+      try {
+        const insert = await fetch(
+          `${SUPABASE_URL}/rest/v1/${TABLA_EGRESOS}?on_conflict=uuid&select=uuid`,
+          {
+            method: 'POST',
+            headers: {
+              apikey: API_KEY,
+              Authorization: `Bearer ${API_KEY}`,
+              'Content-Type': 'application/json',
+              Prefer: 'resolution=ignore-duplicates,return=representation'
+            },
+            body: JSON.stringify(datosInsert)
+          }
+        );
 
-const resp = await insert.json(); // <-- aquí está la verdad
+        if (!insert.ok) {
+          const err = await insert.text();
+          item.querySelector('span').textContent = `❌ ERROR`;
+          item.querySelector('span').className = 'err';
+          logBitacora(`❌ ${data.uuid} → ${err}`);
+          continue;
+        }
 
-// Si insertó, resp viene como: [{ uuid: "...." }]
-// Si ya existía y se ignoró, resp viene como: []
-if (Array.isArray(resp) && resp.length === 1) {
-  item.querySelector('span').textContent = `✅ CARGADO EN BD`;
-  item.querySelector('span').className = 'ok';
-  logBitacora(`✔️ ${data.uuid} → CARGADO EN BD`);
-} else {
-  item.querySelector('span').textContent = `⚠️ IGNORADO – YA EXISTE`;
-  item.querySelector('span').className = 'warn';
-  logBitacora(`⚠️ ${data.uuid} → YA EXISTE EN BD`);
-}
+        const resp = await insert.json();
 
+        if (Array.isArray(resp) && resp.length === 1) {
+          item.querySelector('span').textContent = `✅ CARGADO EN BD`;
+          item.querySelector('span').className = 'ok';
+          logBitacora(`✔️ ${data.uuid} → INSERTADO`);
+        } else {
+          item.querySelector('span').textContent = `⚠️ YA EXISTE`;
+          item.querySelector('span').className = 'warn';
+          logBitacora(`⚠️ ${data.uuid} → DUPLICADO`);
+        }
+
+      } catch (e) {
+        item.querySelector('span').textContent = `❌ ERROR`;
+        item.querySelector('span').className = 'err';
+        logBitacora(`❌ ${data.uuid} → ${e.message}`);
       }
     }
+
+    // ⏸️ PAUSA ENTRE BLOQUES (CLAVE)
+    logBitacora(`⏸️ Pausa ${PAUSA_MS} ms`);
+    await sleep(PAUSA_MS);
+  }
+
+  logBitacora('🏁 CARGA COMPLETA');
+}
 
     function logBitacora(mensaje) {
       const log = document.getElementById("bitacora");
@@ -232,3 +253,4 @@ if (Array.isArray(resp) && resp.length === 1) {
   </script>
 </body>
 </html>
+
