@@ -53,6 +53,24 @@
           const tipo = comprobante?.getAttribute("TipoDeComprobante");
           const uuid = (timbre?.getAttribute("UUID") || "").toUpperCase().trim().replace(/\s+/g, '');
           const receptorRFC = (receptor?.getAttribute("Rfc") || "").toUpperCase().trim();
+          // ======================================================
+// 🔒 VALIDACIÓN TEMPRANA (PRECARGA)
+// ======================================================
+let estado = 'VALIDO';
+let motivo = '';
+
+if (!uuid || !tipo || !receptorRFC) {
+  estado = 'NO_PERMITIDO';
+  motivo = 'XML incompleto';
+} else if (receptorRFC !== RFC_RECEPTOR_PERMITIDO) {
+  estado = 'NO_PERMITIDO';
+  motivo = 'Receptor NO permitido';
+} else if (tipo !== 'I' && tipo !== 'E') {
+  estado = 'NO_PERMITIDO';
+  motivo = `Tipo no permitido (${tipo})`;
+}
+// ======================================================
+
           const emisorRFC = emisor?.getAttribute("Rfc") || "";
           const razonSocial = emisor?.getAttribute("Nombre") || "";
           const nombreReceptor = receptor?.getAttribute("Nombre") || "";
@@ -61,24 +79,7 @@
           const total = parseFloat(comprobante?.getAttribute("Total")) || 0;
           const fecha = comprobante?.getAttribute("Fecha");
           const fechaTimbrado = timbre?.getAttribute("FechaTimbrado") || null;
-          // 🔒 Blindaje temprano (precarga)
-if (!uuid || !tipo || !receptorRFC) {
-  throw new Error("XML incompleto (UUID / Tipo / Receptor)");
-}
-
-let estado = 'VALIDO';
-let motivo = '';
-
-if (receptorRFC !== RFC_RECEPTOR_PERMITIDO) {
-  estado = 'NO_PERMITIDO';
-  motivo = 'Receptor NO permitido';
-}
-
-if (tipo !== 'I' && tipo !== 'E') {
-  estado = 'NO_PERMITIDO';
-  motivo = `Tipo no permitido (${tipo})`;
-}
-
+     
           let conceptosDetalle = [];
           const conceptos = xml.getElementsByTagNameNS(cfdiNS, "Concepto");
 
@@ -110,24 +111,6 @@ if (tipo !== 'I' && tipo !== 'E') {
               tasaImpuesto: impuestoTasa
             });
           }
-// 🔒 VALIDACIÓN TEMPRANA (SOLO DECIDE ESTADO)
-let estado = 'VALIDO';
-let motivo = '';
-
-if (!uuid || !tipo || !receptorRFC) {
-  estado = 'NO_PERMITIDO';
-  motivo = 'XML incompleto';
-}
-
-if (receptorRFC !== RFC_RECEPTOR_PERMITIDO) {
-  estado = 'NO_PERMITIDO';
-  motivo = 'Receptor NO permitido';
-}
-
-if (tipo !== 'I' && tipo !== 'E') {
-  estado = 'NO_PERMITIDO';
-  motivo = `Tipo no permitido (${tipo})`;
-}
 
 archivosDatos.push({
   uuid,
@@ -166,18 +149,22 @@ lista.appendChild(li);
 
     async function procesarArchivos() {
       const items = document.querySelectorAll('#archivoList li');
-// ⛔ SI NO ES VALIDO, NO VA A SUPABASE
-if (data.estado !== 'VALIDO') {
-  item.querySelector('span').textContent = `⛔ ${data.motivo}`;
-  item.querySelector('span').className = 'err';
-  logBitacora(`⛔ ${data.uuid} → ${data.motivo}`);
-  continue;
-}
+
 
       for (let i = 0; i < archivosDatos.length; i++) {
         const item = items[i];
         const data = archivosDatos[i];
 
+          // ==================================================
+  // ⛔ FILTRO FINAL: NO PERMITIDOS NO SUBEN A SUPABASE
+  // ==================================================
+  if (data.estado !== 'VALIDO') {
+    item.querySelector('span').textContent = `⛔ ${data.motivo}`;
+    item.querySelector('span').className = 'err';
+    logBitacora(`⛔ ${data.uuid} → ${data.motivo}`);
+    continue;
+  }
+  // ==================================================
         logBitacora(`📄 Revisando UUID: ${data.uuid}`);
 
 
@@ -245,5 +232,3 @@ if (Array.isArray(resp) && resp.length === 1) {
   </script>
 </body>
 </html>
-
-
