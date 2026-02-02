@@ -25,7 +25,7 @@
 
   <script>
     const RFC_RECEPTOR_PERMITIDO = "AUPS540605TF0";
-    const TABLA_EGRESOS = "xml_inge_sergio_e";
+    const TABLA_INGRESOS = "xml_inge_sergio_i";
     const SUPABASE_URL = "https://cvpbtjlupswbyxenugpz.supabase.co";
     const API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY";
 // ===============================
@@ -71,12 +71,9 @@ let motivo = '';
 if (!uuid || !tipo || !receptorRFC) {
   estado = 'NO_PERMITIDO';
   motivo = 'XML incompleto';
-} else if (receptorRFC !== RFC_RECEPTOR_PERMITIDO) {
+} else if (tipo !== 'I') {
   estado = 'NO_PERMITIDO';
-  motivo = 'Receptor NO permitido';
-} else if (tipo !== 'I' && tipo !== 'E') {
-  estado = 'NO_PERMITIDO';
-  motivo = `Tipo no permitido (${tipo})`;
+  motivo = `No es ingreso (${tipo})`;
 }
 // ======================================================
 
@@ -88,7 +85,23 @@ if (!uuid || !tipo || !receptorRFC) {
           const total = parseFloat(comprobante?.getAttribute("Total")) || 0;
           const fecha = comprobante?.getAttribute("Fecha");
           const fechaTimbrado = timbre?.getAttribute("FechaTimbrado") || null;
-     
+          const versionCFDI = comprobante?.getAttribute("Version");
+          const lugarExpedicion = comprobante?.getAttribute("LugarExpedicion");
+const moneda = comprobante?.getAttribute("Moneda");
+const tipoCambio = parseFloat(comprobante?.getAttribute("TipoCambio")) || null;
+const metodoPago = comprobante?.getAttribute("MetodoPago");
+const formaPago = comprobante?.getAttribute("FormaPago");
+const exportacion = comprobante?.getAttribute("Exportacion");
+const subtotal = parseFloat(comprobante?.getAttribute("SubTotal")) || 0;
+const descuento = parseFloat(comprobante?.getAttribute("Descuento")) || 0;
+
+const regimenEmisor = emisor?.getAttribute("RegimenFiscal");
+const usoCFDI = receptor?.getAttribute("UsoCFDI");
+const regimenReceptor = receptor?.getAttribute("RegimenFiscalReceptor");
+const domicilioFiscalReceptor = receptor?.getAttribute("DomicilioFiscalReceptor");
+const xmlRaw = text;
+
+          
           let conceptosDetalle = [];
           const conceptos = xml.getElementsByTagNameNS(cfdiNS, "Concepto");
 
@@ -123,17 +136,41 @@ if (!uuid || !tipo || !receptorRFC) {
 
 archivosDatos.push({
   uuid,
-  tipo,
-  receptorRFC,
-  nombreReceptor,
-  emisorRFC,
-  razonSocial,
-  folio,
+  tipo_comprobante: tipo,
+  version_cfdi: versionCFDI,
+
   serie,
-  total,
+  folio,
   fecha,
-  fecha_certificacion: fechaTimbrado,
-  conceptosDetalle,
+  lugar_expedicion: lugarExpedicion,
+  moneda,
+  tipo_cambio: tipoCambio,
+  metodo_pago: metodoPago,
+  forma_pago: formaPago,
+  exportacion,
+
+  subtotal,
+  descuento,
+  total,
+
+  rfc_emisor: emisorRFC,
+  nombre_emisor: razonSocial,
+  regimen_fiscal_emisor: regimenEmisor,
+
+  rfc_receptor: receptorRFC,
+  nombre_receptor: nombreReceptor,
+  domicilio_fiscal_receptor: domicilioFiscalReceptor,
+  regimen_fiscal_receptor: regimenReceptor,
+  uso_cfdi: usoCFDI,
+
+  conceptos: conceptosDetalle, // luego puedes enriquecer
+  impuestos: null,             // se puede parsear después
+  complementos: null,
+
+  fecha_timbrado: fechaTimbrado,
+
+  xml_raw: xmlRaw,
+
   estado,
   motivo
 });
@@ -179,26 +216,49 @@ async function procesarArchivos() {
 
       logBitacora(`📄 Subiendo UUID: ${data.uuid}`);
 
-      const datosInsert = {
-        uuid: data.uuid,
-        fecha: data.fecha,
-        rfc_emisor: data.emisorRFC,
-        razon_social_emisor: data.razonSocial,
-        factura: data.folio,
-        serie: data.serie,
-        total: data.total,
-        conceptos_detalle: data.conceptosDetalle,
-        fecha_certificacion: data.fecha_certificacion,
-        tipo: data.tipo,
-        rfc_receptor: data.receptorRFC,
-        nombre_receptor: data.nombreReceptor,
-        naturaleza: "EGRESO",
-        fotos: []
-      };
+  const datosInsert = {
+  uuid: data.uuid,
+  tipo_comprobante: data.tipo_comprobante,
+  version_cfdi: data.version_cfdi,
+
+  serie: data.serie,
+  folio: data.folio,
+  fecha: data.fecha,
+  lugar_expedicion: data.lugar_expedicion,
+  moneda: data.moneda,
+  tipo_cambio: data.tipo_cambio,
+  metodo_pago: data.metodo_pago,
+  forma_pago: data.forma_pago,
+  exportacion: data.exportacion,
+
+  subtotal: data.subtotal,
+  descuento: data.descuento,
+  total: data.total,
+
+  rfc_emisor: data.rfc_emisor,
+  nombre_emisor: data.nombre_emisor,
+  regimen_fiscal_emisor: data.regimen_fiscal_emisor,
+
+  rfc_receptor: data.rfc_receptor,
+  nombre_receptor: data.nombre_receptor,
+  domicilio_fiscal_receptor: data.domicilio_fiscal_receptor,
+  regimen_fiscal_receptor: data.regimen_fiscal_receptor,
+  uso_cfdi: data.uso_cfdi,
+
+  conceptos: data.conceptos,
+  impuestos: data.impuestos,
+  complementos: data.complementos,
+
+  uuid_sat: data.uuid_sat,
+  fecha_timbrado: data.fecha_timbrado,
+
+  xml_raw: data.xml_raw
+};
+
 
       try {
         const insert = await fetch(
-          `${SUPABASE_URL}/rest/v1/${TABLA_EGRESOS}?on_conflict=uuid&select=uuid`,
+          `${SUPABASE_URL}/rest/v1/${TABLA_INGRESOS}?on_conflict=uuid&select=uuid`,
           {
             method: 'POST',
             headers: {
@@ -253,4 +313,5 @@ async function procesarArchivos() {
   </script>
 </body>
 </html>
+
 
