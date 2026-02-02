@@ -16,11 +16,13 @@
   overflow: auto;
   background: white;
 }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 1050px;
-    }
+table {
+  width: 100%;
+  min-width: 1050px;
+  border-collapse: separate;   /* CLAVE */
+  border-spacing: 0;           /* CLAVE */
+}
+
     th, td {
       padding: 8px;
       border: 1px solid #ccc;
@@ -60,13 +62,14 @@
     button.guardar:hover {
       background-color: #004c99;
     }
-th {
+thead th {
   position: sticky;
-  top: 0;
+  top: 42px; 
   background: #003366;
   color: white;
-  z-index: 10;               /* MUY importante */
+  z-index: 20;
 }
+
 
 .top-bar {
   display: flex;
@@ -553,6 +556,7 @@ ventana.document.close();
 </script>
 </body>
 </html>
+
 
 
 
