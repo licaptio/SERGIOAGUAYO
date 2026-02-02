@@ -49,6 +49,16 @@
     .info{
       color:#555;
     }
+.icons{
+  text-align:center;
+  font-size:15px;
+  letter-spacing:2px;
+  white-space:nowrap;
+}
+.icons.fotos{ color:#2e7d32; }
+.icons.pdf{ color:#c62828; }
+.icons.xml{ color:#1565c0; }
+
   </style>
 </head>
 
@@ -67,6 +77,9 @@
   <th>Especialidad</th>
   <th>Gasto Reclamado</th>
   <th>Fecha Reclamación</th>
+  <th>Fotos</th>
+<th>PDF</th>
+<th>XML</th>
 </tr>
 </thead>
 <tbody id="tbody"></tbody>
@@ -109,9 +122,28 @@ data.forEach(r => {
     <td class="info">
       ${r.fecha_reclamacion ? new Date(r.fecha_reclamacion).toLocaleDateString("es-MX") : ""}
     </td>
+<td class="icons fotos">${iconosFotos(r.fotos)}</td>
+<td class="icons pdf">${iconoExiste(r.pdf,'📄')}</td>
+<td class="icons xml">${iconoExiste(r.xml,'🧾')}</td>
+
+
   `;
   tbody.appendChild(tr);
 });
+function iconosFotos(n) {
+  if (n === 0) return '';
+  if (n <= 4) return '📸'.repeat(n);
+  return '📸📸📸+';
+}
+function iconosFotos(fotos) {
+  if (!Array.isArray(fotos) || fotos.length === 0) return '';
+  if (fotos.length <= 4) return '📸'.repeat(fotos.length);
+  return '📸📸📸+';
+}
+
+function iconoExiste(valor, icono) {
+  return valor ? icono : '';
+}
 </script>
 
 </body>
