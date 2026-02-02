@@ -24,6 +24,7 @@
   <pre id="bitacora" style="background:#eee; padding:10px; max-height:200px; overflow:auto; font-size:13px;"></pre>
 
   <script>
+    const RFC_AUPS = "AUPS540605TF0";
     const TABLA_INGRESOS = "xml_inge_sergio_i";
     const SUPABASE_URL = "https://cvpbtjlupswbyxenugpz.supabase.co";
     const API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY";
@@ -58,19 +59,19 @@ function sleep(ms) {
           const emisor = xml.getElementsByTagNameNS(cfdiNS, "Emisor")[0];
           const receptor = xml.getElementsByTagNameNS(cfdiNS, "Receptor")[0];
 
-          const tipo = comprobante?.getAttribute("TipoDeComprobante");
-          const uuid = (timbre?.getAttribute("UUID") || "").toUpperCase().trim().replace(/\s+/g, '');
-          const receptorRFC = (receptor?.getAttribute("Rfc") || "").toUpperCase().trim();
-          // ======================================================
-// 🔒 VALIDACIÓN TEMPRANA (PRECARGA)
-// ======================================================
+const tipo = comprobante?.getAttribute("TipoDeComprobante");
+const uuid = (timbre?.getAttribute("UUID") || "").toUpperCase().trim().replace(/\s+/g, '');
+
+const emisorRFC = (emisor?.getAttribute("Rfc") || "").toUpperCase().trim();
+const receptorRFC = (receptor?.getAttribute("Rfc") || "").toUpperCase().trim();
+
 // ======================================================
 // 🔒 VALIDACIÓN TEMPRANA (PRECARGA)
 // ======================================================
 let estado = 'VALIDO';
 let motivo = '';
 
-if (!uuid || !tipo || !receptorRFC || !emisorRFC) {
+if (!uuid || !tipo || !emisorRFC) {
   estado = 'NO_PERMITIDO';
   motivo = 'XML incompleto';
 }
@@ -81,10 +82,6 @@ else if (tipo !== 'I') {
 else if (emisorRFC !== RFC_AUPS) {
   estado = 'NO_PERMITIDO';
   motivo = `El emisor NO es AUPS (${emisorRFC})`;
-}
-else if (receptorRFC === RFC_AUPS) {
-  estado = 'NO_PERMITIDO';
-  motivo = 'Ingreso inválido: AUPS no puede ser receptor';
 }
 // ======================================================
 
@@ -324,4 +321,5 @@ async function procesarArchivos() {
   </script>
 </body>
 </html>
+
 
