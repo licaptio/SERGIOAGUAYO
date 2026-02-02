@@ -17,13 +17,14 @@
       text-align: center;
       margin-bottom: 1rem;
     }
-    .tabla-contenedor {
-      overflow-x: auto;
-      max-width: 100%;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 0 4px #ccc;
-    }
+.tabla-contenedor {
+  max-height: 70vh;          /* ajusta a tu gusto */
+  overflow-y: auto;
+  overflow-x: auto;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 0 4px #ccc;
+}
     table {
       width: 100%;
       border-collapse: collapse;
@@ -68,6 +69,18 @@
     button.guardar:hover {
       background-color: #004c99;
     }
+th {
+  position: sticky;
+  top: 0;
+  background: #003366;
+  color: white;
+  z-index: 10;               /* MUY importante */
+}
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
 <style>
   @media print {
     @page {
@@ -477,5 +490,6 @@ ventana.document.close();
 </script>
 </body>
 </html>
+
 
 
