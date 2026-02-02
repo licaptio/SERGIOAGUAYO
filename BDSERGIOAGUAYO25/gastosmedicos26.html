@@ -130,11 +130,6 @@ data.forEach(r => {
   `;
   tbody.appendChild(tr);
 });
-function iconosFotos(n) {
-  if (n === 0) return '';
-  if (n <= 4) return '📸'.repeat(n);
-  return '📸📸📸+';
-}
 function iconosFotos(fotos) {
   if (!Array.isArray(fotos) || fotos.length === 0) return '';
   if (fotos.length <= 4) return '📸'.repeat(fotos.length);
