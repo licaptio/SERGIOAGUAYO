@@ -113,7 +113,11 @@ data.forEach(r => {
 
   tr.innerHTML = `
     <td>${r.fecha ? new Date(r.fecha).toLocaleDateString("es-MX") : ""}</td>
-    <td class="uuid">${uuidCorto}</td>
+    <td class="uuid">
+  <a href="detalle.html?uuid=${r.uuid}" style="color:#0c6cbd;text-decoration:none;">
+    ${uuidCorto}
+  </a>
+</td>
     <td>${r.razon_social_emisor ?? ""}</td>
     <td>${r.serie ?? ""} - ${r.factura ?? ""}</td>
     <td>${r.total?.toLocaleString("es-MX",{style:"currency",currency:"MXN"}) ?? ""}</td>
