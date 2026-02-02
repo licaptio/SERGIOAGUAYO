@@ -182,8 +182,6 @@ thead th {
           <th>Total</th>
           <th>¿Gasto Médico?</th>
           <th>¿Reclamado?</th>
-          <th>Fecha reclamación</th>  <!-- NUEVO -->
-          <th>Nota</th>
           <th>Especialidad</th>
         </tr>
       </thead>
@@ -240,16 +238,6 @@ function renderTabla(datos) {
       <td>$${parseFloat(row.total).toFixed(2)}</td>
       <td><input type="checkbox" class="check-medico" ${row.es_gasto_medico ? 'checked' : ''}></td>
       <td><input type="checkbox" class="check-reclamado" ${row.gasto_reclamado ? 'checked' : ''}></td>
-<td>
-  <div class="nota-texto">${row.nota_reclamacion || ''}</div>
-  <textarea class="nota-editar" style="display:none;">${row.nota_reclamacion || ''}</textarea>
-  <div class="nota-controles" style="display:none; margin-top: 5px;">
-    <button class="guardar-nota" style="background:#28a745; color:white; border:none; padding:3px 8px; border-radius:4px; font-size:12px;">💾 Guardar</button>
-    <button class="cancelar-nota" style="background:#dc3545; color:white; border:none; padding:3px 8px; border-radius:4px; font-size:12px;">❌ Cancelar</button>
-  </div>
-  <button class="editar-nota" title="Editar nota">✏️ Editar</button>
-</td>
-
       <td>${selectEspecialidad}</td>
     `;
     tbody.appendChild(tr);
@@ -303,76 +291,6 @@ document.getElementById("filtrarEspecialidad").addEventListener("click", () => {
 
 document.getElementById("mostrarTodos").addEventListener("click", () => {
   renderTabla(datosGlobales);
-});
-
-      // Evento para los botones "Guardar"
-tbody.addEventListener('click', async (e) => {
-  // Si se hace clic en el botón "Editar"
-if (e.target.classList.contains('editar-nota')) {
-  const row = e.target.closest('tr');
-  const divNota = row.querySelector('.nota-texto');
-  const textareaNota = row.querySelector('.nota-editar');
-  const controles = row.querySelector('.nota-controles');
-
-  divNota.style.display = 'none';
-  textareaNota.style.display = 'block';
-  controles.style.display = 'block';
-  e.target.style.display = 'none';
-  return;
-}
-
-if (e.target.classList.contains('cancelar-nota')) {
-  const row = e.target.closest('tr');
-  const divNota = row.querySelector('.nota-texto');
-  const textareaNota = row.querySelector('.nota-editar');
-  const controles = row.querySelector('.nota-controles');
-  const editarBtn = row.querySelector('.editar-nota');
-
-  textareaNota.value = divNota.textContent;
-  textareaNota.style.display = 'none';
-  controles.style.display = 'none';
-  divNota.style.display = 'block';
-  editarBtn.style.display = 'inline-block';
-  return;
-}
-
-if (e.target.classList.contains('guardar-nota')) {
-  const row = e.target.closest('tr');
-  const uuid = row.getAttribute('data-uuid');
-  const textareaNota = row.querySelector('.nota-editar');
-  const divNota = row.querySelector('.nota-texto');
-  const controles = row.querySelector('.nota-controles');
-  const editarBtn = row.querySelector('.editar-nota');
-
-  const nota = textareaNota.value.trim();
-  const es_gasto_medico = row.querySelector('.check-medico')?.checked || false;
-  const gasto_reclamado = row.querySelector('.check-reclamado')?.checked || false;
-  const especialidad = row.querySelector('.select-especialidad')?.value || '';
-
-  const { error } = await supabase
-    .from('xml_inge_sergio_e')
-    .update({
-      nota_reclamacion: nota,
-      es_gasto_medico,
-      gasto_reclamado,
-      especialidad
-    })
-    .eq('uuid', uuid);
-
-  if (error) {
-    alert('❌ Error al guardar: ' + error.message);
-    return;
-  }
-
-  divNota.textContent = nota;
-  textareaNota.style.display = 'none';
-  controles.style.display = 'none';
-  divNota.style.display = 'block';
-  editarBtn.style.display = 'inline-block';
-  mostrarToast("✅ Nota guardada");
-  return;
-}
-
 });
 
 async function autoGuardar(uuid) {
@@ -559,6 +477,7 @@ ventana.document.close();
 </script>
 </body>
 </html>
+
 
 
 
