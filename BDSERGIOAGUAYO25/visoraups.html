@@ -64,10 +64,10 @@ table {
     }
 thead th {
   position: sticky;
-  top: 42px; 
+  top: 0;
   background: #003366;
   color: white;
-  z-index: 20;
+  z-index: 50;
 }
 
 
@@ -148,9 +148,10 @@ thead th {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
 </head>
+
 <body>
+<div class="app">
 <div class="top-bar">
   <div class="top-left">
     <h2>XML Cargados – Inge Sergio</h2>
@@ -190,7 +191,7 @@ thead th {
     </table>
   </div>
 </div>
-</body>
+
 <footer class="footer">
   POWER BY PROVSOFT 2026
 </footer>
@@ -476,7 +477,8 @@ body {
 
 .tabla-contenedor {
   flex: 1;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: auto;
   background: white;
 }
 
@@ -557,6 +559,7 @@ ventana.document.close();
 </script>
 </body>
 </html>
+
 
 
 
