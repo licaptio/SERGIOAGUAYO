@@ -11,17 +11,10 @@
       background: #f9f9f9;
       font-size: 15px;
     }
-    h2 {
-      color: #003366;
-      text-align: center;
-      margin-bottom: 1rem;
-    }
 .tabla-contenedor {
   flex: 1;                 /* usa TODO el espacio restante */
   overflow: auto;
   background: white;
-  border-radius: 0;
-  box-shadow: none;
 }
     table {
       width: 100%;
@@ -74,10 +67,7 @@ th {
   color: white;
   z-index: 10;               /* MUY importante */
 }
-table {
-  border-collapse: separate;
-  border-spacing: 0;
-}
+
 .top-bar {
   display: flex;
   justify-content: space-between;
@@ -150,21 +140,14 @@ table {
   flex-direction: column;
 }
 
-<style>
-  @media print {
-    @page {
-      size: landscape;
-    }
-  }
 </style>
-
-  </style>
 <!-- Librerías para PDF y Excel -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 </head>
+<body>
 <div class="top-bar">
   <div class="top-left">
     <h2>XML Cargados – Inge Sergio</h2>
@@ -204,6 +187,10 @@ table {
     </table>
   </div>
 
+<footer class="footer">
+  POWER BY PROVSOFT 2026
+</footer>
+</body>
   <script>
     const especialidades = [
       "", "Cardiología", "Urología", "Ginecología", "Oncología", "Endocrinología"
@@ -409,18 +396,6 @@ async function autoGuardar(uuid) {
     }); // <-- Cierra bien el script
   </script>
 
-<footer class="footer">
-  POWER BY PROVSOFT 2026
-</footer>
-
-<!-- Fecha -->
-<script>
-  document.getElementById("fechaActual").textContent = new Date().toLocaleDateString("es-MX", {
-    year: "numeric", month: "long", day: "numeric"
-  });
-</script>
-
-
   <!-- Toast -->
   <div id="toast" style="
     position: fixed;
@@ -470,29 +445,60 @@ ventana.document.write(`
           size: landscape;
         }
       }
-      body {
-        font-family: Arial, sans-serif;
-        font-size: 12px;
-        padding: 20px;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-      th, td {
-        border: 1px solid #ccc;
-        padding: 6px;
-        text-align: center;
-      }
-      th {
-        background: #003366;
-        color: white;
-      }
-      h2 {
-        text-align: center;
-        color: #003366;
-        margin-bottom: 20px;
-      }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f9f9f9;
+  font-size: 15px;
+}
+
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  background: #fff;
+  border-bottom: 2px solid #003366;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.tabla-contenedor {
+  flex: 1;
+  overflow: auto;
+  background: white;
+}
+
+table {
+  width: 100%;
+  min-width: 1050px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+th {
+  position: sticky;
+  top: 0;
+  background: #003366;
+  color: white;
+  z-index: 10;
+}
+
+.footer {
+  font-size: 11px;
+  padding: 3px;
+  text-align: center;
+  border-top: 1px solid #ddd;
+  background: #fafafa;
+}
+
     </style>
   </head>
   <body>
@@ -547,6 +553,7 @@ ventana.document.close();
 </script>
 </body>
 </html>
+
 
 
 
