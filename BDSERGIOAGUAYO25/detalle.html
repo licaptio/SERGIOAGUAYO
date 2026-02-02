@@ -3,52 +3,187 @@
 <head>
   <meta charset="UTF-8" />
   <title>Factura CFDI Detalle</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.42.5/dist/umd/supabase.min.js"></script>
+
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
       background: #fff;
       color: #000;
       padding: 2rem;
-      max-width: 900px;
+      max-width: 980px;
       margin: auto;
     }
+
     h2 {
       text-align: center;
       margin-bottom: 20px;
       color: #003366;
     }
+
     .info {
       margin-bottom: 1rem;
       line-height: 1.5;
+      background: #f7f9fb;
+      border: 1px solid #e3e8ef;
+      border-radius: 10px;
+      padding: 14px;
     }
+
     .label {
       font-weight: bold;
       color: #333;
     }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .card {
+      border: 1px solid #e3e8ef;
+      border-radius: 10px;
+      padding: 14px;
+      background: #ffffff;
+    }
+
+    .card h3 {
+      margin: 0 0 10px 0;
+      color: #003366;
+      font-size: 16px;
+    }
+
+    .muted {
+      color: #666;
+      font-size: 13px;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 1rem;
     }
+
     th, td {
       border: 1px solid #ccc;
       padding: 8px;
       font-size: 14px;
       text-align: center;
     }
+
     th {
       background: #003366;
       color: white;
     }
+
     tfoot td {
       font-weight: bold;
       background: #f0f0f0;
     }
+
+    .btn {
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      background: #0c6cbd;
+      color: #fff;
+    }
+
+    .btn:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #e9eef5;
+      color: #003366;
+      border: 1px solid #cfd8e3;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #003366;
+      white-space: pre-wrap;
+    }
+
+    .files {
+      margin-top: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 10px;
+      border: 1px solid #e3e8ef;
+      border-radius: 8px;
+      background: #fbfdff;
+      font-size: 13px;
+    }
+
+    .file-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .file-icon {
+      width: 28px;
+      text-align: center;
+      font-size: 16px;
+    }
+
+    .file-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 560px;
+    }
+
+    .file-actions a {
+      text-decoration: none;
+      font-weight: 700;
+      color: #0c6cbd;
+      border: 1px solid #cfe1f7;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: #f2f8ff;
+    }
+
+    .summary-icons {
+      font-size: 16px;
+      letter-spacing: 2px;
+      margin-top: 6px;
+    }
+
+    .hr {
+      margin: 22px 0;
+      border: none;
+      border-top: 1px solid #e3e8ef;
+    }
+
+    @media (max-width: 760px) {
+      body { padding: 14px; }
+      .row { grid-template-columns: 1fr; }
+      .file-name { max-width: 260px; }
+    }
   </style>
 </head>
+
 <body>
   <h2>Factura CFDI - Vista Detallada</h2>
+
   <div class="info" id="cabecera">Cargando...</div>
 
   <table id="tablaConceptos" style="display:none;">
@@ -83,15 +218,153 @@
     </tfoot>
   </table>
 
+  <hr class="hr" />
+
+  <div class="row">
+    <div class="card">
+      <h3>📎 Subir evidencias</h3>
+      <div class="muted">
+        Puedes subir varios archivos. No validamos nombre ni contenido; solo se guardan y se ligan a este registro.
+      </div>
+
+      <div style="margin-top:12px;">
+        <label class="label">📸 Fotos (cámara/archivos)</label><br />
+        <input type="file" id="fotoInput" accept="image/*" multiple />
+      </div>
+
+      <div style="margin-top:12px;">
+        <label class="label">📄 PDF(s)</label><br />
+        <input type="file" id="pdfInput" accept=".pdf,application/pdf" multiple />
+      </div>
+
+      <div style="margin-top:12px;">
+        <label class="label">🧾 XML(s)</label><br />
+        <input type="file" id="xmlInput" accept=".xml,application/xml,text/xml" multiple />
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:14px;">
+        <button class="btn" id="btnSubir" onclick="subirArchivos()">⬆ Guardar archivos</button>
+        <button class="btn btn-secondary" onclick="cargarDetalle()">🔄 Refrescar</button>
+      </div>
+
+      <div class="status" id="uploadStatus"></div>
+    </div>
+
+    <div class="card">
+      <h3>📌 Archivos ligados</h3>
+      <div class="muted">Resumen y lista de lo ya cargado.</div>
+
+      <div class="summary-icons" id="resumenIconos"></div>
+
+      <div class="files" id="listaArchivos"></div>
+    </div>
+  </div>
+
   <script>
     const supabase = window.supabase.createClient(
       'https://cvpbtjlupswbyxenugpz.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY'
     );
 
-    async function cargarDetalle() {
+    // === CONFIG ===
+    const BUCKET = "gastos_medicos_fotos"; // tu bucket
+    const BASE_FOLDER = "gastos_medicos";  // carpeta interna opcional en el bucket (puedes cambiar)
+
+    // Estado en memoria del registro actual
+    let CURRENT = {
+      uuid: null,
+      fotos: [],
+      pdf: [],
+      xml: []
+    };
+
+    function getUuidFromUrl() {
       const params = new URLSearchParams(window.location.search);
-      const uuid = params.get("uuid");
+      return params.get("uuid");
+    }
+
+    function safeArray(val) {
+      if (Array.isArray(val)) return val.filter(Boolean);
+      if (typeof val === "string" && val.trim() !== "") return [val.trim()]; // compat si aún fuera text
+      return [];
+    }
+
+    function sanitizeFilename(name) {
+      return (name || "archivo")
+        .replace(/[^\w.\-]+/g, "_")
+        .replace(/_+/g, "_")
+        .slice(0, 120);
+    }
+
+    function iconosN(n, icon) {
+      if (!n || n <= 0) return "";
+      if (n <= 4) return icon.repeat(n);
+      return icon.repeat(3) + "+";
+    }
+
+    function getPublicUrl(path) {
+      // Si tu bucket es público, esto funciona directo.
+      // Si NO es público, necesitarás policies o usar signed URLs (requiere permisos).
+      const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+      return data?.publicUrl || "";
+    }
+
+    function filenameFromPath(path) {
+      try {
+        const parts = (path || "").split("/");
+        return parts[parts.length - 1] || path;
+      } catch {
+        return path;
+      }
+    }
+
+    function renderArchivos() {
+      const resumen = document.getElementById("resumenIconos");
+      const lista = document.getElementById("listaArchivos");
+
+      const fotosCount = CURRENT.fotos.length;
+      const pdfCount = CURRENT.pdf.length;
+      const xmlCount = CURRENT.xml.length;
+
+      resumen.textContent =
+        `${iconosN(fotosCount, "📸")} ${iconosN(pdfCount, "📄")} ${iconosN(xmlCount, "🧾")}`.trim();
+
+      const items = [];
+
+      CURRENT.fotos.forEach(p => items.push({ tipo: "foto", icono: "📸", path: p }));
+      CURRENT.pdf.forEach(p => items.push({ tipo: "pdf", icono: "📄", path: p }));
+      CURRENT.xml.forEach(p => items.push({ tipo: "xml", icono: "🧾", path: p }));
+
+      lista.innerHTML = "";
+
+      if (items.length === 0) {
+        lista.innerHTML = `<div class="muted" style="margin-top:10px;">No hay archivos cargados aún.</div>`;
+        return;
+      }
+
+      items.forEach(it => {
+        const url = getPublicUrl(it.path);
+        const name = filenameFromPath(it.path);
+
+        const div = document.createElement("div");
+        div.className = "file-item";
+
+        div.innerHTML = `
+          <div class="file-left">
+            <div class="file-icon">${it.icono}</div>
+            <div class="file-name" title="${name}">${name}</div>
+          </div>
+          <div class="file-actions">
+            ${url ? `<a href="${url}" target="_blank" rel="noopener">Abrir</a>` : `<span class="muted">Sin URL (revisa policies)</span>`}
+          </div>
+        `;
+        lista.appendChild(div);
+      });
+    }
+
+    async function cargarDetalle() {
+      const uuid = getUuidFromUrl();
+      CURRENT.uuid = uuid;
 
       if (!uuid) {
         document.getElementById("cabecera").innerText = "UUID no especificado.";
@@ -100,25 +373,34 @@
 
       const { data, error } = await supabase
         .from("xml_inge_sergio_e")
-        .select("*")
+        .select("uuid, fecha, razon_social_emisor, factura, es_gasto_medico, conceptos_detalle, fotos, pdf, xml, serie, total")
         .eq("uuid", uuid)
         .single();
 
       if (error || !data) {
         document.getElementById("cabecera").innerText = "Factura no encontrada.";
+        console.error(error);
         return;
       }
+
+      // Cargar arrays (compat si vinieran como string por configuración vieja)
+      CURRENT.fotos = safeArray(data.fotos);
+      CURRENT.pdf   = safeArray(data.pdf);
+      CURRENT.xml   = safeArray(data.xml);
 
       const cab = document.getElementById("cabecera");
       cab.innerHTML = `
         <div><span class="label">UUID:</span> ${data.uuid}</div>
-        <div><span class="label">Fecha:</span> ${new Date(data.fecha).toLocaleString()}</div>
-        <div><span class="label">Proveedor:</span> ${data.razon_social_emisor}</div>
-        <div><span class="label">Factura:</span> ${data.factura || '(Sin número)'}</div>
-        <div><span class="label">¿Gasto Médico?:</span> ${data.es_gasto_medico ? '✅ Sí' : '❌ No'}</div>
+        <div><span class="label">Fecha:</span> ${data.fecha ? new Date(data.fecha).toLocaleString() : ""}</div>
+        <div><span class="label">Proveedor:</span> ${data.razon_social_emisor ?? ""}</div>
+        <div><span class="label">Factura:</span> ${data.serie ?? ""} ${data.factura ?? "(Sin número)"}</div>
+        <div><span class="label">Total:</span> ${data.total != null ? Number(data.total).toLocaleString("es-MX",{style:"currency",currency:"MXN"}) : ""}</div>
+        <div><span class="label">¿Gasto Médico?:</span> ${data.es_gasto_medico ? "✅ Sí" : "❌ No"}</div>
       `;
 
-      if (data.conceptos_detalle && Array.isArray(data.conceptos_detalle)) {
+      // Conceptos
+      const conceptos = data.conceptos_detalle;
+      if (conceptos && Array.isArray(conceptos)) {
         const tbody = document.querySelector("#tablaConceptos tbody");
         const tabla = document.getElementById("tablaConceptos");
         tbody.innerHTML = "";
@@ -126,10 +408,10 @@
         let subtotal = 0;
         let ivaTotal = 0;
 
-        data.conceptos_detalle.forEach(c => {
-          const cantidad = c.cantidad || 1;
-          const valorUnitario = parseFloat(c.costoUnitario || 0);
-          const tasaIVA = parseFloat(c.tasaImpuesto || 0);
+        conceptos.forEach(c => {
+          const cantidad = Number(c.cantidad || 1);
+          const valorUnitario = Number(c.costoUnitario || 0);
+          const tasaIVA = Number(c.tasaImpuesto || 0);
           const iva = valorUnitario * tasaIVA;
           const totalUnitario = valorUnitario + iva;
           const totalLinea = totalUnitario * cantidad;
@@ -140,11 +422,11 @@
           const tr = document.createElement("tr");
           tr.innerHTML = `
             <td>${cantidad}</td>
-            <td>${c.codigoSAT || ''}</td>
-            <td>${c.descripcion || ''}</td>
+            <td>${c.codigoSAT || ""}</td>
+            <td style="text-align:left">${c.descripcion || ""}</td>
             <td>$${valorUnitario.toFixed(2)}</td>
             <td>${(tasaIVA * 100).toFixed(0)}%</td>
-            <td>$${(iva).toFixed(2)}</td>
+            <td>$${iva.toFixed(2)}</td>
             <td>$${totalLinea.toFixed(2)}</td>
           `;
           tbody.appendChild(tr);
@@ -156,10 +438,110 @@
 
         tabla.style.display = "table";
       }
+
+      renderArchivos();
+      document.getElementById("uploadStatus").textContent = "";
+    }
+
+    async function subirArchivos() {
+      const status = document.getElementById("uploadStatus");
+      const btn = document.getElementById("btnSubir");
+
+      if (!CURRENT.uuid) {
+        alert("UUID no definido.");
+        return;
+      }
+
+      const fotosFiles = document.getElementById("fotoInput").files;
+      const pdfFiles   = document.getElementById("pdfInput").files;
+      const xmlFiles   = document.getElementById("xmlInput").files;
+
+      const totalSeleccionados = (fotosFiles?.length || 0) + (pdfFiles?.length || 0) + (xmlFiles?.length || 0);
+      if (totalSeleccionados === 0) {
+        alert("Selecciona al menos un archivo.");
+        return;
+      }
+
+      btn.disabled = true;
+      status.textContent = "Subiendo...\n";
+
+      // Copias locales para ir agregando
+      let fotosArr = [...CURRENT.fotos];
+      let pdfArr = [...CURRENT.pdf];
+      let xmlArr = [...CURRENT.xml];
+
+      // Helper upload
+      async function uploadOne(file, folder) {
+        const name = sanitizeFilename(file.name);
+        const path = `${BASE_FOLDER}/${CURRENT.uuid}/${folder}/${Date.now()}_${name}`;
+
+        const { error } = await supabase.storage
+          .from(BUCKET)
+          .upload(path, file, { upsert: false, contentType: file.type || "application/octet-stream" });
+
+        if (error) {
+          status.textContent += `❌ ${folder}: ${name} -> ${error.message}\n`;
+          return null;
+        }
+
+        status.textContent += `✅ ${folder}: ${name}\n`;
+        return path;
+      }
+
+      // Subir fotos
+      for (const f of fotosFiles) {
+        const p = await uploadOne(f, "fotos");
+        if (p) fotosArr.push(p);
+      }
+
+      // Subir PDFs
+      for (const f of pdfFiles) {
+        const p = await uploadOne(f, "pdf");
+        if (p) pdfArr.push(p);
+      }
+
+      // Subir XMLs
+      for (const f of xmlFiles) {
+        const p = await uploadOne(f, "xml");
+        if (p) xmlArr.push(p);
+      }
+
+      // Quitar duplicados por si acaso
+      fotosArr = Array.from(new Set(fotosArr));
+      pdfArr   = Array.from(new Set(pdfArr));
+      xmlArr   = Array.from(new Set(xmlArr));
+
+      // Guardar en DB
+      const { error: upErr } = await supabase
+        .from("xml_inge_sergio_e")
+        .update({
+          fotos: fotosArr,
+          pdf: pdfArr,
+          xml: xmlArr
+        })
+        .eq("uuid", CURRENT.uuid);
+
+      if (upErr) {
+        status.textContent += `\n❌ Error guardando en tabla: ${upErr.message}\n`;
+        btn.disabled = false;
+        return;
+      }
+
+      // Actualizar estado local + limpiar inputs
+      CURRENT.fotos = fotosArr;
+      CURRENT.pdf = pdfArr;
+      CURRENT.xml = xmlArr;
+
+      document.getElementById("fotoInput").value = "";
+      document.getElementById("pdfInput").value = "";
+      document.getElementById("xmlInput").value = "";
+
+      status.textContent += "\n✅ Listo. Guardado en tabla.\n";
+      renderArchivos();
+      btn.disabled = false;
     }
 
     document.addEventListener("DOMContentLoaded", cargarDetalle);
   </script>
 </body>
 </html>
-
