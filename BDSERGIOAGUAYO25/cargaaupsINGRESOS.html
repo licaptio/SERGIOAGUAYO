@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Carga de XML - Inge Sergio</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    ul { padding: 0; list-style: none; }
+    li { margin-bottom: 6px; font-size: 14px; }
+    .ok { color: green; }
+    .warn { color: orange; }
+    .err { color: red; }
+    .pending { color: blue; }
+  </style>
+</head>
+<body>
+  <h2>Subir EGRESOS (CFDI donde receptor = AUPS540605TF0)</h2>
+  <input type="file" id="xmlInput" accept=".xml" multiple>
+  <button onclick="procesarArchivos()">Procesar y Subir</button>
+
+  <h3>Archivos</h3>
+  <ul id="archivoList"></ul>
+  <h3>Bitácora</h3>
+  <pre id="bitacora" style="background:#eee; padding:10px; max-height:200px; overflow:auto; font-size:13px;"></pre>
+
+  <script>
+    const RFC_RECEPTOR_PERMITIDO = "AUPS540605TF0";
+    const TABLA_EGRESOS = "xml_inge_sergio_e";
+    const SUPABASE_URL = "https://cvpbtjlupswbyxenugpz.supabase.co";
+    const API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY";
+// ===============================
+// ⚙️ CONFIGURACIÓN DE CARGA SEGURA
+// ===============================
+const TAM_LOTE = 20;     // cuántos XML por bloque
+const PAUSA_MS = 500;   // pausa entre bloques (ms)
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+    let archivosDatos = [];
+
+    document.getElementById('xmlInput').addEventListener('change', async function () {
+      const lista = document.getElementById('archivoList');
+      lista.innerHTML = '';
+      archivosDatos = [];
+
+      for (const file of this.files) {
+        try {
+          const text = await file.text();
+          const parser = new DOMParser();
+          const xml = parser.parseFromString(text, 'application/xml');
+
+          const cfdiNS = "http://www.sat.gob.mx/cfd/4";
+          const tfdNS = "http://www.sat.gob.mx/TimbreFiscalDigital";
+
+          const comprobante = xml.getElementsByTagNameNS(cfdiNS, "Comprobante")[0];
+          const timbre = xml.getElementsByTagNameNS(tfdNS, "TimbreFiscalDigital")[0];
+          const emisor = xml.getElementsByTagNameNS(cfdiNS, "Emisor")[0];
+          const receptor = xml.getElementsByTagNameNS(cfdiNS, "Receptor")[0];
+
+          const tipo = comprobante?.getAttribute("TipoDeComprobante");
+          const uuid = (timbre?.getAttribute("UUID") || "").toUpperCase().trim().replace(/\s+/g, '');
+          const receptorRFC = (receptor?.getAttribute("Rfc") || "").toUpperCase().trim();
+          // ======================================================
+// 🔒 VALIDACIÓN TEMPRANA (PRECARGA)
+// ======================================================
+let estado = 'VALIDO';
+let motivo = '';
+
+if (!uuid || !tipo || !receptorRFC) {
+  estado = 'NO_PERMITIDO';
+  motivo = 'XML incompleto';
+} else if (receptorRFC !== RFC_RECEPTOR_PERMITIDO) {
+  estado = 'NO_PERMITIDO';
+  motivo = 'Receptor NO permitido';
+} else if (tipo !== 'I' && tipo !== 'E') {
+  estado = 'NO_PERMITIDO';
+  motivo = `Tipo no permitido (${tipo})`;
+}
+// ======================================================
+
+          const emisorRFC = emisor?.getAttribute("Rfc") || "";
+          const razonSocial = emisor?.getAttribute("Nombre") || "";
+          const nombreReceptor = receptor?.getAttribute("Nombre") || "";
+          const folio = comprobante?.getAttribute("Folio") || '';
+          const serie = comprobante?.getAttribute("Serie") || '';
+          const total = parseFloat(comprobante?.getAttribute("Total")) || 0;
+          const fecha = comprobante?.getAttribute("Fecha");
+          const fechaTimbrado = timbre?.getAttribute("FechaTimbrado") || null;
+     
+          let conceptosDetalle = [];
+          const conceptos = xml.getElementsByTagNameNS(cfdiNS, "Concepto");
+
+          for (let c of conceptos) {
+            const cantidad = parseFloat(c.getAttribute("Cantidad")) || 0;
+            const descripcion = c.getAttribute("Descripcion") || "";
+            const codigoSAT = c.getAttribute("ClaveProdServ") || "";
+            const valorUnitario = parseFloat(c.getAttribute("ValorUnitario")) || 0;
+
+            let impuestoTasa = 0;
+            let tipoImpuesto = "";
+            const impuestos = c.getElementsByTagNameNS(cfdiNS, "Impuestos")[0];
+            if (impuestos) {
+              const traslados = impuestos.getElementsByTagNameNS(cfdiNS, "Traslado");
+              for (let t of traslados) {
+                const tasa = parseFloat(t.getAttribute("TasaOCuota")) || 0;
+                const impuesto = t.getAttribute("Impuesto") || "";
+                impuestoTasa += tasa;
+                tipoImpuesto = impuesto === '003' ? 'IEPS' : 'IVA';
+              }
+            }
+
+            conceptosDetalle.push({
+              cantidad,
+              codigoSAT,
+              descripcion,
+              costoUnitario: valorUnitario,
+              tipoImpuesto: tipoImpuesto || "NINGUNO",
+              tasaImpuesto: impuestoTasa
+            });
+          }
+
+archivosDatos.push({
+  uuid,
+  tipo,
+  receptorRFC,
+  nombreReceptor,
+  emisorRFC,
+  razonSocial,
+  folio,
+  serie,
+  total,
+  fecha,
+  fecha_certificacion: fechaTimbrado,
+  conceptosDetalle,
+  estado,
+  motivo
+});
+
+const li = document.createElement('li');
+
+if (estado === 'VALIDO') {
+  li.innerHTML = `📄 <b>${uuid}</b> <span class="pending">VALIDADO</span>`;
+} else {
+  li.innerHTML = `⛔ <b>${uuid}</b> <span class="err">${motivo}</span>`;
+}
+
+lista.appendChild(li);
+
+        } catch (e) {
+          const li = document.createElement('li');
+          li.innerHTML = `❌ <b>${file.name}</b> <span class="err">→ Error al leer</span>`;
+          lista.appendChild(li);
+        }
+      }
+    });
+
+async function procesarArchivos() {
+  const items = document.querySelectorAll('#archivoList li');
+
+  for (let i = 0; i < archivosDatos.length; i += TAM_LOTE) {
+
+    const bloque = archivosDatos.slice(i, i + TAM_LOTE);
+    logBitacora(`🚚 Procesando bloque ${i + 1} a ${i + bloque.length}`);
+
+    for (let j = 0; j < bloque.length; j++) {
+      const indexReal = i + j;
+      const item = items[indexReal];
+      const data = bloque[j];
+
+      // ⛔ FILTRO FINAL
+      if (data.estado !== 'VALIDO') {
+        item.querySelector('span').textContent = `⛔ ${data.motivo}`;
+        item.querySelector('span').className = 'err';
+        logBitacora(`⛔ ${data.uuid} → ${data.motivo}`);
+        continue;
+      }
+
+      logBitacora(`📄 Subiendo UUID: ${data.uuid}`);
+
+      const datosInsert = {
+        uuid: data.uuid,
+        fecha: data.fecha,
+        rfc_emisor: data.emisorRFC,
+        razon_social_emisor: data.razonSocial,
+        factura: data.folio,
+        serie: data.serie,
+        total: data.total,
+        conceptos_detalle: data.conceptosDetalle,
+        fecha_certificacion: data.fecha_certificacion,
+        tipo: data.tipo,
+        rfc_receptor: data.receptorRFC,
+        nombre_receptor: data.nombreReceptor,
+        naturaleza: "EGRESO",
+        fotos: []
+      };
+
+      try {
+        const insert = await fetch(
+          `${SUPABASE_URL}/rest/v1/${TABLA_EGRESOS}?on_conflict=uuid&select=uuid`,
+          {
+            method: 'POST',
+            headers: {
+              apikey: API_KEY,
+              Authorization: `Bearer ${API_KEY}`,
+              'Content-Type': 'application/json',
+              Prefer: 'resolution=ignore-duplicates,return=representation'
+            },
+            body: JSON.stringify(datosInsert)
+          }
+        );
+
+        if (!insert.ok) {
+          const err = await insert.text();
+          item.querySelector('span').textContent = `❌ ERROR`;
+          item.querySelector('span').className = 'err';
+          logBitacora(`❌ ${data.uuid} → ${err}`);
+          continue;
+        }
+
+        const resp = await insert.json();
+
+        if (Array.isArray(resp) && resp.length === 1) {
+          item.querySelector('span').textContent = `✅ CARGADO EN BD`;
+          item.querySelector('span').className = 'ok';
+          logBitacora(`✔️ ${data.uuid} → INSERTADO`);
+        } else {
+          item.querySelector('span').textContent = `⚠️ YA EXISTE`;
+          item.querySelector('span').className = 'warn';
+          logBitacora(`⚠️ ${data.uuid} → DUPLICADO`);
+        }
+
+      } catch (e) {
+        item.querySelector('span').textContent = `❌ ERROR`;
+        item.querySelector('span').className = 'err';
+        logBitacora(`❌ ${data.uuid} → ${e.message}`);
+      }
+    }
+
+    // ⏸️ PAUSA ENTRE BLOQUES (CLAVE)
+    logBitacora(`⏸️ Pausa ${PAUSA_MS} ms`);
+    await sleep(PAUSA_MS);
+  }
+
+  logBitacora('🏁 CARGA COMPLETA');
+}
+
+    function logBitacora(mensaje) {
+      const log = document.getElementById("bitacora");
+      log.textContent += mensaje + "\n";
+    }
+  </script>
+</body>
+</html>
+
