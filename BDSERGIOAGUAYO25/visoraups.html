@@ -80,6 +80,63 @@ table {
   border-collapse: separate;
   border-spacing: 0;
 }
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  background: #fff;
+  border-bottom: 2px solid #003366;
+  gap: 10px;
+}
+
+.top-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.top-left h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #003366;
+  white-space: nowrap;
+}
+
+.filtro {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.top-right {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 5px 10px;
+  font-size: 12px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  color: white;
+  white-space: nowrap;
+}
+
+.btn.blue { background: #0066cc; }
+.btn.red { background: #d9534f; }
+.btn.green { background: #5cb85c; }
+.btn.darkblue { background: #004085; }
+.btn.gray { background: #6c757d; }
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
 
 <style>
   @media print {
@@ -96,32 +153,23 @@ table {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 </head>
-<body>
-  <h2>XML Cargados - Inge Sergio</h2>
-<div style="text-align:center; margin-bottom: 1rem;">
-  <label>
-    <input type="checkbox" id="filtroGastoMedico" />
-    🔍 Mostrar solo gastos médicos
-    <div style="text-align:center; margin-bottom: 1rem;">
-  <button id="btnImprimir" style="padding:8px 12px; background:#0066cc; color:white; border:none; border-radius:5px; font-weight:bold;">
-    🖨️ Imprimir Filtrados
-  </button>
-  <button id="exportarPDF" style="padding:8px 12px; background:#d9534f; color:white; border:none; border-radius:5px; font-weight:bold; margin-left:10px;">
-    📄 Exportar PDF
-  </button>
-  <button id="exportarExcel" style="padding:8px 12px; background:#5cb85c; color:white; border:none; border-radius:5px; font-weight:bold; margin-left:10px;">
-    📊 Exportar Excel
-  </button>
-</div>
+<div class="top-bar">
+  <div class="top-left">
+    <h2>XML Cargados – Inge Sergio</h2>
 
-  </label>
-  <br><br>
-  <button id="filtrarEspecialidad" style="padding:8px 12px; background:#007bff; color:white; border:none; border-radius:5px; font-weight:bold; margin-right:8px;">
-    📋 Ver No Reclamados con Especialidad
-  </button>
-  <button id="mostrarTodos" style="padding:8px 12px; background:#6c757d; color:white; border:none; border-radius:5px; font-weight:bold;">
-    🔄 Mostrar Todos
-  </button>
+    <label class="filtro">
+      <input type="checkbox" id="filtroGastoMedico">
+      Mostrar solo gastos médicos
+    </label>
+  </div>
+
+  <div class="top-right">
+    <button id="btnImprimir" class="btn blue">🖨 Imprimir</button>
+    <button id="exportarPDF" class="btn red">📄 PDF</button>
+    <button id="exportarExcel" class="btn green">📊 Excel</button>
+    <button id="filtrarEspecialidad" class="btn darkblue">📋 No Reclamados</button>
+    <button id="mostrarTodos" class="btn gray">🔄 Todos</button>
+  </div>
 </div>
 
   <div class="tabla-contenedor">
@@ -490,6 +538,7 @@ ventana.document.close();
 </script>
 </body>
 </html>
+
 
 
 
