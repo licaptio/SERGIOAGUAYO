@@ -350,7 +350,7 @@ if (e.target.classList.contains('guardar-nota')) {
   const especialidad = row.querySelector('.select-especialidad')?.value || '';
 
   const { error } = await supabase
-    .from('xml_inge_sergio')
+    .from('xml_inge_sergio_e')
     .update({
       nota_reclamacion: nota,
       es_gasto_medico,
@@ -384,7 +384,7 @@ async function autoGuardar(uuid) {
   const especialidad = row.querySelector('.select-especialidad')?.value || '';
 
   const { error } = await supabase
-    .from('xml_inge_sergio')
+    .from('xml_inge_sergio_e')
     .update({
       es_gasto_medico,
       gasto_reclamado,
@@ -559,6 +559,7 @@ ventana.document.close();
 </script>
 </body>
 </html>
+
 
 
 
