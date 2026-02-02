@@ -64,17 +64,30 @@ function sleep(ms) {
           // ======================================================
 // 🔒 VALIDACIÓN TEMPRANA (PRECARGA)
 // ======================================================
+// ======================================================
+// 🔒 VALIDACIÓN TEMPRANA (PRECARGA)
+// ======================================================
 let estado = 'VALIDO';
 let motivo = '';
 
-if (!uuid || !tipo || !receptorRFC) {
+if (!uuid || !tipo || !receptorRFC || !emisorRFC) {
   estado = 'NO_PERMITIDO';
   motivo = 'XML incompleto';
-} else if (tipo !== 'I') {
+}
+else if (tipo !== 'I') {
   estado = 'NO_PERMITIDO';
-  motivo = `No es ingreso (${tipo})`;
+  motivo = `No es Ingreso (Tipo ${tipo})`;
+}
+else if (emisorRFC !== RFC_AUPS) {
+  estado = 'NO_PERMITIDO';
+  motivo = `El emisor NO es AUPS (${emisorRFC})`;
+}
+else if (receptorRFC === RFC_AUPS) {
+  estado = 'NO_PERMITIDO';
+  motivo = 'Ingreso inválido: AUPS no puede ser receptor';
 }
 // ======================================================
+
 
           const emisorRFC = emisor?.getAttribute("Rfc") || "";
           const razonSocial = emisor?.getAttribute("Nombre") || "";
@@ -311,3 +324,4 @@ async function procesarArchivos() {
   </script>
 </body>
 </html>
+
