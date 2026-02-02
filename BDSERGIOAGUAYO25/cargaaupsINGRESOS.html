@@ -86,7 +86,6 @@ else if (emisorRFC !== RFC_AUPS) {
 // ======================================================
 
 
-          const emisorRFC = emisor?.getAttribute("Rfc") || "";
           const razonSocial = emisor?.getAttribute("Nombre") || "";
           const nombreReceptor = receptor?.getAttribute("Nombre") || "";
           const folio = comprobante?.getAttribute("Folio") || '';
@@ -321,5 +320,6 @@ async function procesarArchivos() {
   </script>
 </body>
 </html>
+
 
 
