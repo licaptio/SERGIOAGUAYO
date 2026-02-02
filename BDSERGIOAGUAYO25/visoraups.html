@@ -9,7 +9,6 @@
     body {
       font-family: Arial, sans-serif;
       background: #f9f9f9;
-      padding: 1rem;
       font-size: 15px;
     }
     h2 {
@@ -18,12 +17,11 @@
       margin-bottom: 1rem;
     }
 .tabla-contenedor {
-  max-height: 70vh;          /* ajusta a tu gusto */
-  overflow-y: auto;
-  overflow-x: auto;
+  flex: 1;                 /* usa TODO el espacio restante */
+  overflow: auto;
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 0 4px #ccc;
+  border-radius: 0;
+  box-shadow: none;
 }
     table {
       width: 100%;
@@ -145,6 +143,11 @@ table {
   text-align: center;
   border-top: 1px solid #ddd;
   background: #fafafa;
+}
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 <style>
@@ -544,6 +547,7 @@ ventana.document.close();
 </script>
 </body>
 </html>
+
 
 
 
