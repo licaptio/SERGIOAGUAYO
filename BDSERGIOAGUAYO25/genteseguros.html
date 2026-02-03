@@ -6,8 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-
   <style>
     body{
       font-family:'Poppins',sans-serif;
@@ -46,76 +44,61 @@
       color:#0c6cbd;
       font-family:monospace;
     }
-    .info{
-      color:#555;
+    .info{ color:#555; }
+
+    .icons{
+      text-align:center;
+      white-space:nowrap;
+      letter-spacing:0;
     }
-.icons{
-  text-align:center;
-  white-space:nowrap;
-  letter-spacing:0; /* important: para que no se separen raro */
-}
-.icons.fotos{ color:#2e7d32; }
-.icons.pdf{ color:#c62828; }
-.icons.xml{ color:#1565c0; }
+    .icons.fotos{ color:#2e7d32; }
+    .icons.pdf{ color:#c62828; }
+    .icons.xml{ color:#1565c0; }
 
-/* 🖥️ OCULTAR CARDS EN PC */
-.card-list{
-  display:none;
-}
+    /* 🖥️ OCULTAR CARDS EN PC */
+    .card-list{ display:none; }
 
-/* 📱 CARDS EN CELULAR */
-@media (max-width: 768px){
+    /* 📱 CARDS EN CELULAR */
+    @media (max-width: 768px){
+      table, thead{ display:none; }
+      .card-list{
+        display:flex;
+        flex-direction:column;
+        gap:12px;
+      }
+      .card-item{
+        background:#fff;
+        border-radius:12px;
+        padding:14px;
+        box-shadow:0 3px 8px rgba(0,0,0,.15);
+        font-size:13px;
+      }
+      .card-item .row{ margin-bottom:6px; }
+      .label{
+        font-weight:600;
+        color:#555;
+      }
+      .uuid a{
+        font-family:monospace;
+        font-size:12px;
+      }
+    }
 
-  table, thead{
-    display:none;
-  }
-
-  .card-list{
-    display:flex;
-    flex-direction:column;
-    gap:12px;
-  }
-
-  .card-item{
-    background:#fff;
-    border-radius:12px;
-    padding:14px;
-    box-shadow:0 3px 8px rgba(0,0,0,.15);
-    font-size:13px;
-  }
-
-  .card-item .row{
-    margin-bottom:6px;
-  }
-
-  .label{
-    font-weight:600;
-    color:#555;
-  }
-
-  .uuid a{
-    font-family:monospace;
-    font-size:12px;
-  }
-}
-.icon-btn{
-  display:inline-block;
-  background:none;
-  border:none;
-  cursor:pointer;
-  font-size:14px;      /* chiquito */
-  padding:2px 3px;     /* compacto */
-  text-decoration:none;
-  line-height:1;
-  user-select:none;
-}
-
-.icon-btn:hover{
-  transform:scale(1.15);
-  filter:brightness(1.2);
-}
-
-
+    .icon-btn{
+      display:inline-block;
+      background:none;
+      border:none;
+      cursor:pointer;
+      font-size:14px;
+      padding:2px 3px;
+      text-decoration:none;
+      line-height:1;
+      user-select:none;
+    }
+    .icon-btn:hover{
+      transform:scale(1.15);
+      filter:brightness(1.2);
+    }
   </style>
 </head>
 
@@ -123,215 +106,245 @@
 
 <h2>🩺 Gastos Médicos – Clon</h2>
 
-<table>
-<thead>
-<tr>
-  <th>Fecha</th>
-  <th>UUID</th>
-  <th>Razón Social</th>
-  <th>Serie / Factura</th>
-  <th>Total</th>
-  <th>Especialidad</th>
-  <th>Gasto Reclamado</th>
-  <th>Fecha Reclamación</th>
-  <th>Fotos</th>
-<th>PDF</th>
-<th>XML</th>
-</tr>
-</thead>
-<tbody id="tbody"></tbody>
-</table>
+<div id="loginBox" style="max-width:360px;margin:40px auto;background:#fff;padding:25px;border-radius:12px;box-shadow:0 6px 15px rgba(0,0,0,.25)">
+  <h3 style="text-align:center;margin-bottom:15px">🔐 Acceso</h3>
 
-<!-- 📱 CONTENEDOR PARA CELULAR -->
-<div id="cards" class="card-list"></div>
+  <input id="email" type="email" placeholder="Correo"
+         style="width:100%;padding:10px;margin-bottom:10px">
+
+  <input id="password" type="password" placeholder="Contraseña"
+         style="width:100%;padding:10px;margin-bottom:15px">
+
+  <button onclick="login()"
+          style="width:100%;padding:10px;background:#003366;color:#fff;border:none;border-radius:6px">
+    Entrar
+  </button>
+</div>
+
+<div id="app" style="display:none">
+  <table>
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>UUID</th>
+        <th>Razón Social</th>
+        <th>Serie / Factura</th>
+        <th>Total</th>
+        <th>Especialidad</th>
+        <th>Gasto Reclamado</th>
+        <th>Fecha Reclamación</th>
+        <th>Fotos</th>
+        <th>PDF</th>
+        <th>XML</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <!-- 📱 CONTENEDOR PARA CELULAR -->
+  <div id="cards" class="card-list"></div>
+</div>
 
 <script type="module">
-const supabase = window.supabase.createClient(
-  "https://cvpbtjlupswbyxenugpz.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY"
-);
+  import { auth, supabase } from "./js/services.js";
 
-/* =========================
-   ✅ CONFIG (ANTES DE USAR)
-========================= */
-const BUCKET = "gastos_medicos_fotos"; // 👈 tu bucket real (public)
+  /* =========================
+     ✅ CONFIG
+  ========================= */
+  const BUCKET = "gastos_medicos_fotos"; // tu bucket real (public)
 
-/* =========================
-   Helpers
-========================= */
-function normArray(v){
-  if (Array.isArray(v)) return v.filter(x => typeof x === "string" && x.trim() !== "");
-  if (typeof v === "string" && v.trim() !== "") return [v.trim()];
-  return [];
-}
-
-// AGREGAR ESTA FUNCIÓN NUEVA:
-function recortarTexto(texto, maxLength = 30) {
-  if (!texto || typeof texto !== 'string') return '';
-  if (texto.length <= maxLength) return texto;
-  return texto.substring(0, maxLength - 3) + '...';
-}
-
-function isHttp(url){
-  return typeof url === "string" && /^https?:\/\//i.test(url);
-}
-
-function resolveUrl(filePath){
-  if (!filePath || typeof filePath !== "string") return null;
-  if (isHttp(filePath)) return filePath; // ya viene completo
-
-  // filePath debe ser ruta dentro del bucket, ej:
-  // gastos_medicos/<uuid>/xml/archivo.xml
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
-  return data?.publicUrl || null;
-}
-
-function renderDownloadLinks(files, { icon, onlyExt=null, titlePrefix="Descargar" }){
-  const arr = normArray(files);
-
-  const filtered = onlyExt
-    ? arr.filter(f => f.toLowerCase().endsWith(onlyExt))
-    : arr;
-
-  if (filtered.length === 0) return "";
-
-  return filtered.map((f) => {
-    const url = resolveUrl(f);
-    if (!url) return "";
-    const nombre = f.split("/").pop() || f;
-
-    return `
-      <a class="icon-btn"
-         href="${url}"
-         download
-         target="_blank"
-         rel="noopener"
-         title="${titlePrefix}: ${nombre}">
-        ${icon}
-      </a>
-    `;
-  }).join("");
-}
-
-/* =========================
-   ✅ ICONOS DESCARGABLES
-   - Fotos: 1 icono por foto (sin compactar)
-   - PDF: 1 por pdf
-   - XML: 1 por xml
-========================= */
-function linksFotos(fotos){
-  // si quieres filtrar solo imágenes, activa onlyExt por tipo; aquí va libre
-  return renderDownloadLinks(fotos, { icon: "📸", onlyExt: null, titlePrefix: "Descargar foto" });
-}
-
-function linksPDF(pdfArray){
-  return renderDownloadLinks(pdfArray, { icon: "📄", onlyExt: ".pdf", titlePrefix: "Descargar PDF" });
-}
-
-function linksXML(xmlVal){
-  const arr = normArray(xmlVal);
-  const xmls = arr.filter(f => f.toLowerCase().endsWith('.xml'));
-  if (xmls.length === 0) return '';
-
-  return xmls.map(f => {
-    const nombre = f.split('/').pop() || f;
-    const url = resolveUrl(f);
-    if (!url) return '';
-
-    return `
-      <a class="icon-btn"
-         href="#"
-         title="Descargar XML: ${nombre}"
-         onclick="descargarXML('${url}','${nombre}')">
-        🧾
-      </a>
-    `;
-  }).join('');
-}
-
-/* =========================
-   CARGA DATA
-========================= */
-const { data, error } = await supabase
-  .from("xml_inge_sergio_e")
-  .select("*")
-  .eq("es_gasto_medico", true)
-  .order("fecha", { ascending: true });
-
-if(error){
-  alert("Error al cargar datos");
-  console.error(error);
-}
-
-/* =========================
-   RENDER
-========================= */
-const tbody = document.getElementById("tbody");
-tbody.innerHTML = "";
-
-const cards = document.getElementById("cards");
-
-(data || []).forEach(r => {
-  const tr = document.createElement("tr");
-  if (r.gasto_reclamado) tr.style.background = "#d7f8d7";
-
-  const uuidCorto = r.uuid ? r.uuid.substring(0, 18) + "…" : "";
-
-  tr.innerHTML = `
-    <td>${r.fecha ? new Date(r.fecha).toLocaleDateString("es-MX") : ""}</td>
-<td class="uuid">
-  ${uuidCorto}
-</td>
-    <td>${recortarTexto(r.razon_social_emisor ?? "", 30)}</td>
-    <td>${r.serie ?? ""} - ${r.factura ?? ""}</td>
-    <td>${r.total?.toLocaleString("es-MX",{style:"currency",currency:"MXN"}) ?? ""}</td>
-    <td class="info">${r.especialidad ?? ""}</td>
-    <td class="info">${r.gasto_reclamado ? "Sí" : "No"}</td>
-    <td class="info">${r.fecha_reclamacion ? new Date(r.fecha_reclamacion).toLocaleDateString("es-MX") : ""}</td>
-
-    <td class="icons fotos">${linksFotos(r.fotos)}</td>
-    <td class="icons pdf">${linksPDF(r.pdf)}</td>
-    <td class="icons xml">${linksXML(r.xml)}</td>
-  `;
-
-  tbody.appendChild(tr);
-
-  // cards (móvil) si quieres luego también ponemos los iconos ahí
-  const card = document.createElement("div");
-  card.className = "card-item";
-  card.innerHTML = `
-    <div class="row"><span class="label">Fecha:</span> ${r.fecha ? new Date(r.fecha).toLocaleDateString("es-MX") : ""}</div>
-    <div class="row uuid"><span class="label">UUID:</span> ${r.uuid}</div>
-    <div class="row"><span class="label">Razón Social:</span> ${recortarTexto(r.razon_social_emisor ?? "", 30)}</div>
-    <div class="row"><span class="label">Factura:</span> ${r.serie ?? ""} - ${r.factura ?? ""}</div>
-    <div class="row"><span class="label">Total:</span> ${r.total?.toLocaleString("es-MX",{style:"currency",currency:"MXN"}) ?? ""}</div>
-    <div class="row"><span class="label">Especialidad:</span> ${r.especialidad ?? ""}</div>
-    <div class="row"><span class="label">Reclamado:</span> ${r.gasto_reclamado ? "Sí" : "No"}</div>
-  `;
-  cards.appendChild(card);
-});
-window.descargarXML = async function(url, filename){
-  try{
-    const res = await fetch(url);
-    const blob = await res.blob();
-
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = filename || 'archivo.xml';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    URL.revokeObjectURL(a.href);
-  }catch(err){
-    console.error('Error descargando XML:', err);
-    alert('No se pudo descargar el XML');
+  /* =========================
+     Helpers
+  ========================= */
+  function normArray(v){
+    if (Array.isArray(v)) return v.filter(x => typeof x === "string" && x.trim() !== "");
+    if (typeof v === "string" && v.trim() !== "") return [v.trim()];
+    return [];
   }
-};
 
+  function recortarTexto(texto, maxLength = 30) {
+    if (!texto || typeof texto !== 'string') return '';
+    if (texto.length <= maxLength) return texto;
+    return texto.substring(0, maxLength - 3) + '...';
+  }
+
+  function isHttp(url){
+    return typeof url === "string" && /^https?:\/\//i.test(url);
+  }
+
+  function resolveUrl(filePath){
+    if (!filePath || typeof filePath !== "string") return null;
+    if (isHttp(filePath)) return filePath;
+
+    const { data } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
+    return data?.publicUrl || null;
+  }
+
+  function renderDownloadLinks(files, { icon, onlyExt=null, titlePrefix="Descargar" }){
+    const arr = normArray(files);
+    const filtered = onlyExt ? arr.filter(f => f.toLowerCase().endsWith(onlyExt)) : arr;
+    if (filtered.length === 0) return "";
+
+    return filtered.map((f) => {
+      const url = resolveUrl(f);
+      if (!url) return "";
+      const nombre = f.split("/").pop() || f;
+
+      return `
+        <a class="icon-btn"
+           href="${url}"
+           download
+           target="_blank"
+           rel="noopener"
+           title="${titlePrefix}: ${nombre}">
+          ${icon}
+        </a>
+      `;
+    }).join("");
+  }
+
+  function linksFotos(fotos){
+    return renderDownloadLinks(fotos, { icon: "📸", onlyExt: null, titlePrefix: "Descargar foto" });
+  }
+
+  function linksPDF(pdfArray){
+    return renderDownloadLinks(pdfArray, { icon: "📄", onlyExt: ".pdf", titlePrefix: "Descargar PDF" });
+  }
+
+  function linksXML(xmlVal){
+    const arr = normArray(xmlVal);
+    const xmls = arr.filter(f => f.toLowerCase().endsWith('.xml'));
+    if (xmls.length === 0) return '';
+
+    return xmls.map(f => {
+      const nombre = f.split('/').pop() || f;
+      const url = resolveUrl(f);
+      if (!url) return '';
+
+      return `
+        <a class="icon-btn"
+           href="#"
+           title="Descargar XML: ${nombre}"
+           onclick="descargarXML('${url}','${nombre}')">
+          🧾
+        </a>
+      `;
+    }).join('');
+  }
+
+  /* =========================
+     LOGIN
+  ========================= */
+  window.login = async function(){
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    try{
+      await auth.signInWithEmailAndPassword(email, password);
+    }catch(e){
+      alert("Credenciales incorrectas");
+    }
+  };
+
+  auth.onAuthStateChanged(user => {
+    if(user){
+      document.getElementById("loginBox").style.display = "none";
+      document.getElementById("app").style.display = "block";
+      cargarDatos();
+    }else{
+      document.getElementById("loginBox").style.display = "block";
+      document.getElementById("app").style.display = "none";
+    }
+  });
+
+  /* =========================
+     CARGA DATA
+  ========================= */
+  async function cargarDatos(){
+    const { data, error } = await supabase
+      .from("xml_inge_sergio_e")
+      .select("*")
+      .eq("es_gasto_medico", true)
+      .order("fecha", { ascending: true });
+
+    if(error){
+      alert("Error al cargar datos");
+      console.error(error);
+      return;
+    }
+
+    renderTabla(data);
+  }
+
+  /* =========================
+     RENDER
+  ========================= */
+  function renderTabla(data){
+    const tbody = document.getElementById("tbody");
+    tbody.innerHTML = "";
+
+    const cards = document.getElementById("cards");
+    cards.innerHTML = "";
+
+    (data || []).forEach(r => {
+      const tr = document.createElement("tr");
+      if (r.gasto_reclamado) tr.style.background = "#d7f8d7";
+
+      const uuidCorto = r.uuid ? r.uuid.substring(0, 18) + "…" : "";
+
+      tr.innerHTML = `
+        <td>${r.fecha ? new Date(r.fecha).toLocaleDateString("es-MX") : ""}</td>
+        <td class="uuid">${uuidCorto}</td>
+        <td>${recortarTexto(r.razon_social_emisor ?? "", 30)}</td>
+        <td>${r.serie ?? ""} - ${r.factura ?? ""}</td>
+        <td>${r.total?.toLocaleString("es-MX",{style:"currency",currency:"MXN"}) ?? ""}</td>
+        <td class="info">${r.especialidad ?? ""}</td>
+        <td class="info">${r.gasto_reclamado ? "Sí" : "No"}</td>
+        <td class="info">${r.fecha_reclamacion ? new Date(r.fecha_reclamacion).toLocaleDateString("es-MX") : ""}</td>
+        <td class="icons fotos">${linksFotos(r.fotos)}</td>
+        <td class="icons pdf">${linksPDF(r.pdf)}</td>
+        <td class="icons xml">${linksXML(r.xml)}</td>
+      `;
+
+      tbody.appendChild(tr);
+
+      const card = document.createElement("div");
+      card.className = "card-item";
+      card.innerHTML = `
+        <div class="row"><span class="label">Fecha:</span> ${r.fecha ? new Date(r.fecha).toLocaleDateString("es-MX") : ""}</div>
+        <div class="row uuid"><span class="label">UUID:</span> ${r.uuid}</div>
+        <div class="row"><span class="label">Razón Social:</span> ${recortarTexto(r.razon_social_emisor ?? "", 30)}</div>
+        <div class="row"><span class="label">Factura:</span> ${r.serie ?? ""} - ${r.factura ?? ""}</div>
+        <div class="row"><span class="label">Total:</span> ${r.total?.toLocaleString("es-MX",{style:"currency",currency:"MXN"}) ?? ""}</div>
+        <div class="row"><span class="label">Especialidad:</span> ${r.especialidad ?? ""}</div>
+        <div class="row"><span class="label">Reclamado:</span> ${r.gasto_reclamado ? "Sí" : "No"}</div>
+      `;
+      cards.appendChild(card);
+    });
+  }
+
+  /* =========================
+     DESCARGA XML
+  ========================= */
+  window.descargarXML = async function(url, filename){
+    try{
+      const res = await fetch(url);
+      const blob = await res.blob();
+
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename || 'archivo.xml';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      URL.revokeObjectURL(a.href);
+    }catch(err){
+      console.error('Error descargando XML:', err);
+      alert('No se pudo descargar el XML');
+    }
+  };
 </script>
-
 
 </body>
 </html>
-
