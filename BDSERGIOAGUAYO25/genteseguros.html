@@ -272,11 +272,9 @@ const cards = document.getElementById("cards");
 
   tr.innerHTML = `
     <td>${r.fecha ? new Date(r.fecha).toLocaleDateString("es-MX") : ""}</td>
-    <td class="uuid">
-      <a href="detalle.html?uuid=${r.uuid}" style="color:#0c6cbd;text-decoration:none;">
-        ${uuidCorto}
-      </a>
-    </td>
+<td class="uuid">
+  ${uuidCorto}
+</td>
     <td>${r.razon_social_emisor ?? ""}</td>
     <td>${r.serie ?? ""} - ${r.factura ?? ""}</td>
     <td>${r.total?.toLocaleString("es-MX",{style:"currency",currency:"MXN"}) ?? ""}</td>
@@ -296,7 +294,7 @@ const cards = document.getElementById("cards");
   card.className = "card-item";
   card.innerHTML = `
     <div class="row"><span class="label">Fecha:</span> ${r.fecha ? new Date(r.fecha).toLocaleDateString("es-MX") : ""}</div>
-    <div class="row uuid"><span class="label">UUID:</span> <a href="detalle.html?uuid=${r.uuid}">${r.uuid}</a></div>
+    <div class="row uuid"><span class="label">UUID:</span> ${r.uuid}</div>
     <div class="row"><span class="label">Razón Social:</span> ${r.razon_social_emisor ?? ""}</div>
     <div class="row"><span class="label">Factura:</span> ${r.serie ?? ""} - ${r.factura ?? ""}</div>
     <div class="row"><span class="label">Total:</span> ${r.total?.toLocaleString("es-MX",{style:"currency",currency:"MXN"}) ?? ""}</div>
