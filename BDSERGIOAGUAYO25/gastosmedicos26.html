@@ -58,6 +58,41 @@
 .icons.fotos{ color:#2e7d32; }
 .icons.pdf{ color:#c62828; }
 .icons.xml{ color:#1565c0; }
+/* 📱 CARDS EN CELULAR */
+@media (max-width: 768px){
+
+  table, thead{
+    display:none;
+  }
+
+  .card-list{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+
+  .card-item{
+    background:#fff;
+    border-radius:12px;
+    padding:14px;
+    box-shadow:0 3px 8px rgba(0,0,0,.15);
+    font-size:13px;
+  }
+
+  .card-item .row{
+    margin-bottom:6px;
+  }
+
+  .label{
+    font-weight:600;
+    color:#555;
+  }
+
+  .uuid a{
+    font-family:monospace;
+    font-size:12px;
+  }
+}
 
   </style>
 </head>
@@ -85,6 +120,8 @@
 <tbody id="tbody"></tbody>
 </table>
 
+<!-- 📱 CONTENEDOR PARA CELULAR -->
+<div id="cards" class="card-list"></div>
 <script type="module">
 const supabase = window.supabase.createClient(
   "https://cvpbtjlupswbyxenugpz.supabase.co",
@@ -105,19 +142,22 @@ if(error){
 const tbody = document.getElementById("tbody");
 tbody.innerHTML = "";
 
-data.forEach(r => {
-  const tr = document.createElement("tr");
-  if(r.gasto_reclamado) tr.style.background="#d7f8d7";
+const cards = document.getElementById("cards");
 
-  const uuidCorto = r.uuid ? r.uuid.substring(0,18) + "…" : "";
+data.forEach(r => {
+  /* ================= TABLA (PC) ================= */
+  const tr = document.createElement("tr");
+  if (r.gasto_reclamado) tr.style.background = "#d7f8d7";
+
+  const uuidCorto = r.uuid ? r.uuid.substring(0, 18) + "…" : "";
 
   tr.innerHTML = `
     <td>${r.fecha ? new Date(r.fecha).toLocaleDateString("es-MX") : ""}</td>
     <td class="uuid">
-  <a href="detalle.html?uuid=${r.uuid}" style="color:#0c6cbd;text-decoration:none;">
-    ${uuidCorto}
-  </a>
-</td>
+      <a href="detalle.html?uuid=${r.uuid}" style="color:#0c6cbd;text-decoration:none;">
+        ${uuidCorto}
+      </a>
+    </td>
     <td>${r.razon_social_emisor ?? ""}</td>
     <td>${r.serie ?? ""} - ${r.factura ?? ""}</td>
     <td>${r.total?.toLocaleString("es-MX",{style:"currency",currency:"MXN"}) ?? ""}</td>
@@ -126,13 +166,50 @@ data.forEach(r => {
     <td class="info">
       ${r.fecha_reclamacion ? new Date(r.fecha_reclamacion).toLocaleDateString("es-MX") : ""}
     </td>
-<td class="icons fotos">${iconosFotos(r.fotos)}</td>
-<td class="icons pdf">${iconoExiste(r.pdf,'📄')}</td>
-<td class="icons xml">${iconoExiste(r.xml,'🧾')}</td>
-
-
+    <td class="icons fotos">${iconosFotos(r.fotos)}</td>
+    <td class="icons pdf">${iconoExiste(r.pdf,'📄')}</td>
+    <td class="icons xml">${iconoExiste(r.xml,'🧾')}</td>
   `;
+
   tbody.appendChild(tr);
+
+  /* ================= CARDS (CELULAR) ================= */
+  const card = document.createElement("div");
+  card.className = "card-item";
+
+  card.innerHTML = `
+    <div class="row"><span class="label">Fecha:</span>
+      ${r.fecha ? new Date(r.fecha).toLocaleDateString("es-MX") : ""}
+    </div>
+
+    <div class="row uuid"><span class="label">UUID:</span>
+      <a href="detalle.html?uuid=${r.uuid}">
+        ${r.uuid}
+      </a>
+    </div>
+
+    <div class="row"><span class="label">Razón Social:</span>
+      ${r.razon_social_emisor ?? ""}
+    </div>
+
+    <div class="row"><span class="label">Factura:</span>
+      ${r.serie ?? ""} - ${r.factura ?? ""}
+    </div>
+
+    <div class="row"><span class="label">Total:</span>
+      ${r.total?.toLocaleString("es-MX",{style:"currency",currency:"MXN"}) ?? ""}
+    </div>
+
+    <div class="row"><span class="label">Especialidad:</span>
+      ${r.especialidad ?? ""}
+    </div>
+
+    <div class="row"><span class="label">Reclamado:</span>
+      ${r.gasto_reclamado ? "Sí" : "No"}
+    </div>
+  `;
+
+  cards.appendChild(card);
 });
 function iconosFotos(fotos) {
   if (!Array.isArray(fotos) || fotos.length === 0) return '';
