@@ -165,6 +165,13 @@ function normArray(v){
   return [];
 }
 
+// AGREGAR ESTA FUNCIÓN NUEVA:
+function recortarTexto(texto, maxLength = 30) {
+  if (!texto || typeof texto !== 'string') return '';
+  if (texto.length <= maxLength) return texto;
+  return texto.substring(0, maxLength - 3) + '...';
+}
+
 function isHttp(url){
   return typeof url === "string" && /^https?:\/\//i.test(url);
 }
@@ -275,7 +282,7 @@ const cards = document.getElementById("cards");
 <td class="uuid">
   ${uuidCorto}
 </td>
-    <td>${r.razon_social_emisor ?? ""}</td>
+    <td>${recortarTexto(r.razon_social_emisor ?? "", 30)}</td>
     <td>${r.serie ?? ""} - ${r.factura ?? ""}</td>
     <td>${r.total?.toLocaleString("es-MX",{style:"currency",currency:"MXN"}) ?? ""}</td>
     <td class="info">${r.especialidad ?? ""}</td>
@@ -295,7 +302,7 @@ const cards = document.getElementById("cards");
   card.innerHTML = `
     <div class="row"><span class="label">Fecha:</span> ${r.fecha ? new Date(r.fecha).toLocaleDateString("es-MX") : ""}</div>
     <div class="row uuid"><span class="label">UUID:</span> ${r.uuid}</div>
-    <div class="row"><span class="label">Razón Social:</span> ${r.razon_social_emisor ?? ""}</div>
+    <div class="row"><span class="label">Razón Social:</span> ${recortarTexto(r.razon_social_emisor ?? "", 30)}</div>
     <div class="row"><span class="label">Factura:</span> ${r.serie ?? ""} - ${r.factura ?? ""}</div>
     <div class="row"><span class="label">Total:</span> ${r.total?.toLocaleString("es-MX",{style:"currency",currency:"MXN"}) ?? ""}</div>
     <div class="row"><span class="label">Especialidad:</span> ${r.especialidad ?? ""}</div>
