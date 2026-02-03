@@ -166,9 +166,9 @@ data.forEach(r => {
     <td class="info">
       ${r.fecha_reclamacion ? new Date(r.fecha_reclamacion).toLocaleDateString("es-MX") : ""}
     </td>
-    <td class="icons fotos">${iconosFotos(r.fotos)}</td>
-    <td class="icons pdf">${iconoExiste(r.pdf,'📄')}</td>
-    <td class="icons xml">${iconoExiste(r.xml,'🧾')}</td>
+<td class="icons fotos">${iconosFotos(r.fotos)}</td>
+<td class="icons pdf">${iconoPDF(r.pdf)}</td>
+<td class="icons xml">${iconoXML(r.xml)}</td>
   `;
 
   tbody.appendChild(tr);
@@ -212,13 +212,24 @@ data.forEach(r => {
   cards.appendChild(card);
 });
 function iconosFotos(fotos) {
-  if (!Array.isArray(fotos) || fotos.length === 0) return '';
+  if (!Array.isArray(fotos)) return '';
+  if (fotos.length === 0) return '';
   if (fotos.length <= 4) return '📸'.repeat(fotos.length);
   return '📸📸📸+';
 }
 
 function iconoExiste(valor, icono) {
   return valor ? icono : '';
+}
+function iconoPDF(pdf) {
+  if (!pdf) return '';
+  if (typeof pdf === 'string' && pdf.trim() === '') return '';
+  return '📄';
+}
+function iconoXML(xml) {
+  if (!xml) return '';
+  if (typeof xml === 'string' && xml.trim() === '') return '';
+  return '🧾';
 }
 
 </script>
