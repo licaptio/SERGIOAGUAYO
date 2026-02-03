@@ -229,8 +229,20 @@
 
       <div style="margin-top:12px;">
         <label class="label">📸 Fotos (cámara/archivos)</label><br />
-        <input type="file" id="fotoInput" accept="image/*" multiple />
+        <input 
+  type="file" 
+  id="fotoInput" 
+  accept="image/*"
+  capture="environment"
+  multiple
+/>
+
       </div>
+<!-- 📸 PREVIEW DE FOTOS -->
+<div 
+  id="previewFotos"
+  style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+</div>
 
       <div style="margin-top:12px;">
         <label class="label">📄 PDF(s)</label><br />
@@ -538,10 +550,34 @@
 
       status.textContent += "\n✅ Listo. Guardado en tabla.\n";
       renderArchivos();
+// 🧹 Limpiar preview de fotos
+document.getElementById("previewFotos").innerHTML = "";
+
       btn.disabled = false;
     }
 
     document.addEventListener("DOMContentLoaded", cargarDetalle);
-  </script>
+    // 📸 Preview de fotos antes de subir
+document.getElementById("fotoInput").addEventListener("change", e => {
+  const cont = document.getElementById("previewFotos");
+  cont.innerHTML = "";
+
+  for (const file of e.target.files) {
+    if (!file.type.startsWith("image/")) continue;
+
+    const img = document.createElement("img");
+    img.src = URL.createObjectURL(file);
+    img.style.width = "80px";
+    img.style.height = "80px";
+    img.style.objectFit = "cover";
+    img.style.borderRadius = "8px";
+    img.style.border = "1px solid #ccc";
+
+    cont.appendChild(img);
+  }
+});
+
+</script>
 </body>
 </html>
+
