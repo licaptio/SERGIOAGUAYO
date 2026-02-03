@@ -99,6 +99,18 @@
     font-size:12px;
   }
 }
+.icon-btn{
+  background:none;
+  border:none;
+  cursor:pointer;
+  font-size:16px;
+  padding:4px;
+}
+
+.icon-btn:hover{
+  transform:scale(1.15);
+  filter:brightness(1.2);
+}
 
   </style>
 </head>
@@ -172,9 +184,9 @@ data.forEach(r => {
     <td class="info">
       ${r.fecha_reclamacion ? new Date(r.fecha_reclamacion).toLocaleDateString("es-MX") : ""}
     </td>
-<td class="icons fotos">${iconosFotos(r.fotos)}</td>
-<td class="icons pdf">${iconoPDF(r.pdf)}</td>
-<td class="icons xml">${iconoXML(r.xml)}</td>
+<td class="icons fotos">${btnFotos(r.fotos, r.uuid)}</td>
+<td class="icons pdf">${btnPDF(r.pdf)}</td>
+<td class="icons xml">${btnXML(r.xml)}</td>
   `;
 
   tbody.appendChild(tr);
@@ -236,6 +248,37 @@ function iconoXML(xml) {
   if (!xml) return '';
   if (typeof xml === 'string' && xml.trim() === '') return '';
   return '🧾';
+}
+window.verFotos = function(uuid){
+  window.open(`fotos.html?uuid=${uuid}`, '_blank');
+}
+
+function btnFotos(fotos, uuid) {
+  if (!Array.isArray(fotos) || fotos.length === 0) return '';
+  return `
+    <button class="icon-btn" onclick="verFotos('${uuid}')">
+      📸${fotos.length > 1 ? `(${fotos.length})` : ''}
+    </button>
+  `;
+}
+function btnPDF(pdfArray) {
+  if (!Array.isArray(pdfArray)) return '';
+  const pdf = pdfArray.find(p => p.toLowerCase().endsWith('.pdf'));
+  if (!pdf) return '';
+  return `
+    <a class="icon-btn" href="${pdf}" target="_blank" title="Abrir PDF">
+      📄
+    </a>
+  `;
+}
+function btnXML(xml) {
+  if (!xml || typeof xml !== 'string') return '';
+  if (!xml.toLowerCase().endsWith('.xml')) return '';
+  return `
+    <a class="icon-btn" href="${xml}" target="_blank" title="Abrir XML">
+      🧾
+    </a>
+  `;
 }
 
 </script>
