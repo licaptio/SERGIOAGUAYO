@@ -1,7 +1,7 @@
-// js/services.js
+// services.js
 
 /* =========================
-   🔥 FIREBASE AUTH (COMPAT)
+   🔥 FIREBASE AUTH (compat)
 ========================= */
 import "https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js";
 import "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js";
@@ -10,21 +10,24 @@ const firebaseConfig = {
   apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
   authDomain: "inventariopv-643f1.firebaseapp.com",
   projectId: "inventariopv-643f1",
-  storageBucket: "inventariopv-643f1.appspot.com",
+  storageBucket: "inventariopv-643f1.firebasestorage.app",
   messagingSenderId: "96242533231",
   appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
 };
 
-// ✅ INICIALIZACIÓN CORRECTA
-firebase.initializeApp(firebaseConfig);
+// ✅ compat: inicializa así
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
-// ✅ EXPORTAS AUTH
 export const auth = firebase.auth();
 
 /* =========================
-   🧠 SUPABASE
+   🧠 SUPABASE (ESM OK)
 ========================= */
-import { createClient } from "https://unpkg.com/@supabase/supabase-js@2/+esm";
+// ✅ NO uses unpkg +esm (te da CORS/404 en GH Pages)
+// Usa esm.sh (sirve ESM con CORS OK)
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 export const supabase = createClient(
   "https://cvpbtjlupswbyxenugpz.supabase.co",
