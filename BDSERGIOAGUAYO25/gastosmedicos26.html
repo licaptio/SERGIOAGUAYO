@@ -144,12 +144,91 @@
 
 <!-- 📱 CONTENEDOR PARA CELULAR -->
 <div id="cards" class="card-list"></div>
+
 <script type="module">
 const supabase = window.supabase.createClient(
   "https://cvpbtjlupswbyxenugpz.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY"
 );
 
+/* =========================
+   ✅ CONFIG (ANTES DE USAR)
+========================= */
+const BUCKET = "gastos_medicos_fotos"; // 👈 tu bucket real (public)
+
+/* =========================
+   Helpers
+========================= */
+function normArray(v){
+  if (Array.isArray(v)) return v.filter(x => typeof x === "string" && x.trim() !== "");
+  if (typeof v === "string" && v.trim() !== "") return [v.trim()];
+  return [];
+}
+
+function isHttp(url){
+  return typeof url === "string" && /^https?:\/\//i.test(url);
+}
+
+function resolveUrl(filePath){
+  if (!filePath || typeof filePath !== "string") return null;
+  if (isHttp(filePath)) return filePath; // ya viene completo
+
+  // filePath debe ser ruta dentro del bucket, ej:
+  // gastos_medicos/<uuid>/xml/archivo.xml
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
+  return data?.publicUrl || null;
+}
+
+function renderDownloadLinks(files, { icon, onlyExt=null, titlePrefix="Descargar" }){
+  const arr = normArray(files);
+
+  const filtered = onlyExt
+    ? arr.filter(f => f.toLowerCase().endsWith(onlyExt))
+    : arr;
+
+  if (filtered.length === 0) return "";
+
+  return filtered.map((f) => {
+    const url = resolveUrl(f);
+    if (!url) return "";
+    const nombre = f.split("/").pop() || f;
+
+    return `
+      <a class="icon-btn"
+         href="${url}"
+         download
+         target="_blank"
+         rel="noopener"
+         title="${titlePrefix}: ${nombre}">
+        ${icon}
+      </a>
+    `;
+  }).join("");
+}
+
+/* =========================
+   ✅ ICONOS DESCARGABLES
+   - Fotos: 1 icono por foto (sin compactar)
+   - PDF: 1 por pdf
+   - XML: 1 por xml
+========================= */
+function linksFotos(fotos){
+  // si quieres filtrar solo imágenes, activa onlyExt por tipo; aquí va libre
+  return renderDownloadLinks(fotos, { icon: "📸", onlyExt: null, titlePrefix: "Descargar foto" });
+}
+
+function linksPDF(pdfArray){
+  return renderDownloadLinks(pdfArray, { icon: "📄", onlyExt: ".pdf", titlePrefix: "Descargar PDF" });
+}
+
+function linksXML(xmlVal){
+  // soporta string o array
+  return renderDownloadLinks(xmlVal, { icon: "🧾", onlyExt: ".xml", titlePrefix: "Descargar XML" });
+}
+
+/* =========================
+   CARGA DATA
+========================= */
 const { data, error } = await supabase
   .from("xml_inge_sergio_e")
   .select("*")
@@ -161,13 +240,15 @@ if(error){
   console.error(error);
 }
 
+/* =========================
+   RENDER
+========================= */
 const tbody = document.getElementById("tbody");
 tbody.innerHTML = "";
 
 const cards = document.getElementById("cards");
 
-data.forEach(r => {
-  /* ================= TABLA (PC) ================= */
+(data || []).forEach(r => {
   const tr = document.createElement("tr");
   if (r.gasto_reclamado) tr.style.background = "#d7f8d7";
 
@@ -185,161 +266,31 @@ data.forEach(r => {
     <td>${r.total?.toLocaleString("es-MX",{style:"currency",currency:"MXN"}) ?? ""}</td>
     <td class="info">${r.especialidad ?? ""}</td>
     <td class="info">${r.gasto_reclamado ? "Sí" : "No"}</td>
-    <td class="info">
-      ${r.fecha_reclamacion ? new Date(r.fecha_reclamacion).toLocaleDateString("es-MX") : ""}
-    </td>
-<td class="icons fotos">${linksFotos(r.fotos)}</td>
-<td class="icons pdf">${linksPDF(r.pdf)}</td>
-<td class="icons xml">${linksXML(r.xml)}</td>
+    <td class="info">${r.fecha_reclamacion ? new Date(r.fecha_reclamacion).toLocaleDateString("es-MX") : ""}</td>
+
+    <td class="icons fotos">${linksFotos(r.fotos)}</td>
+    <td class="icons pdf">${linksPDF(r.pdf)}</td>
+    <td class="icons xml">${linksXML(r.xml)}</td>
   `;
 
   tbody.appendChild(tr);
 
-  /* ================= CARDS (CELULAR) ================= */
+  // cards (móvil) si quieres luego también ponemos los iconos ahí
   const card = document.createElement("div");
   card.className = "card-item";
-
   card.innerHTML = `
-    <div class="row"><span class="label">Fecha:</span>
-      ${r.fecha ? new Date(r.fecha).toLocaleDateString("es-MX") : ""}
-    </div>
-
-    <div class="row uuid"><span class="label">UUID:</span>
-      <a href="detalle.html?uuid=${r.uuid}">
-        ${r.uuid}
-      </a>
-    </div>
-
-    <div class="row"><span class="label">Razón Social:</span>
-      ${r.razon_social_emisor ?? ""}
-    </div>
-
-    <div class="row"><span class="label">Factura:</span>
-      ${r.serie ?? ""} - ${r.factura ?? ""}
-    </div>
-
-    <div class="row"><span class="label">Total:</span>
-      ${r.total?.toLocaleString("es-MX",{style:"currency",currency:"MXN"}) ?? ""}
-    </div>
-
-    <div class="row"><span class="label">Especialidad:</span>
-      ${r.especialidad ?? ""}
-    </div>
-
-    <div class="row"><span class="label">Reclamado:</span>
-      ${r.gasto_reclamado ? "Sí" : "No"}
-    </div>
+    <div class="row"><span class="label">Fecha:</span> ${r.fecha ? new Date(r.fecha).toLocaleDateString("es-MX") : ""}</div>
+    <div class="row uuid"><span class="label">UUID:</span> <a href="detalle.html?uuid=${r.uuid}">${r.uuid}</a></div>
+    <div class="row"><span class="label">Razón Social:</span> ${r.razon_social_emisor ?? ""}</div>
+    <div class="row"><span class="label">Factura:</span> ${r.serie ?? ""} - ${r.factura ?? ""}</div>
+    <div class="row"><span class="label">Total:</span> ${r.total?.toLocaleString("es-MX",{style:"currency",currency:"MXN"}) ?? ""}</div>
+    <div class="row"><span class="label">Especialidad:</span> ${r.especialidad ?? ""}</div>
+    <div class="row"><span class="label">Reclamado:</span> ${r.gasto_reclamado ? "Sí" : "No"}</div>
   `;
-
   cards.appendChild(card);
 });
-function iconosFotos(fotos) {
-  if (!Array.isArray(fotos)) return '';
-  if (fotos.length === 0) return '';
-  if (fotos.length <= 4) return '📸'.repeat(fotos.length);
-  return '📸📸📸+';
-}
-
-function iconoExiste(valor, icono) {
-  return valor ? icono : '';
-}
-function iconoPDF(pdf) {
-  if (!pdf) return '';
-  if (typeof pdf === 'string' && pdf.trim() === '') return '';
-  return '📄';
-}
-function iconoXML(xml) {
-  if (!xml) return '';
-  if (typeof xml === 'string' && xml.trim() === '') return '';
-  return '🧾';
-}
-// ====== CONFIG: buckets de Supabase Storage (ajusta a los tuyos) ======
-const BUCKET_FOTOS = null; // ejemplo: "gastos_fotos"
-const BUCKET_DOCS  = null; // ejemplo: "gastos_docs" (pdf y xml juntos) o usa 2 buckets
-
-// ====== Helpers ======
-function normArray(v){
-  if (Array.isArray(v)) return v.filter(Boolean);
-  if (typeof v === 'string' && v.trim() !== '') return [v.trim()];
-  return [];
-}
-
-function isHttp(url){
-  return typeof url === 'string' && /^https?:\/\//i.test(url);
-}
-
-// Convierte "path/en/bucket/archivo.pdf" -> URL pública si NO viene como http(s)
-function resolveUrl(file, bucket){
-  if (!file || typeof file !== 'string') return null;
-  if (isHttp(file)) return file;
-
-  // Si no hay bucket, asumimos que ya viene como ruta usable (por si estás sirviendo desde otro lado)
-  if (!bucket) return file;
-
-  // Public URL (bucket debe ser público o con políticas de lectura para anon)
-  const { data } = supabase.storage.from(bucket).getPublicUrl(file);
-  return data?.publicUrl || null;
-}
-
-// Genera <a> descargable por cada archivo
-function renderDownloadLinks(files, { icon, bucket, onlyExt=null, titlePrefix="Descargar" }){
-  const arr = normArray(files);
-
-  const filtered = onlyExt
-    ? arr.filter(f => typeof f === 'string' && f.toLowerCase().endsWith(onlyExt))
-    : arr;
-
-  if (filtered.length === 0) return '';
-
-  return filtered.map((f, idx) => {
-    const url = resolveUrl(f, bucket);
-    if (!url) return '';
-    const nombre = f.split('/').pop() || f;
-    return `
-      <a class="icon-btn"
-         href="${url}"
-         download
-         target="_blank"
-         rel="noopener"
-         title="${titlePrefix}: ${nombre}">
-        ${icon}
-      </a>
-    `;
-  }).join('');
-}
-
-// ====== Tus 3 columnas ======
-function linksFotos(fotos){
-  // Fotos: 1 icono por foto (no compactar)
-  return renderDownloadLinks(fotos, {
-    icon: "📸",
-    bucket: BUCKET_FOTOS,
-    onlyExt: null,
-    titlePrefix: "Descargar foto"
-  });
-}
-
-function linksPDF(pdfArray){
-  // PDF: tu campo pdf es ARRAY, 1 icono por cada pdf
-  return renderDownloadLinks(pdfArray, {
-    icon: "📄",
-    bucket: BUCKET_DOCS,
-    onlyExt: ".pdf",
-    titlePrefix: "Descargar PDF"
-  });
-}
-
-function linksXML(xmlVal){
-  // XML: soporta string o array, 1 icono por cada xml
-  return renderDownloadLinks(xmlVal, {
-    icon: "🧾",
-    bucket: BUCKET_DOCS,
-    onlyExt: ".xml",
-    titlePrefix: "Descargar XML"
-  });
-}
-
 </script>
+
 
 </body>
 </html>
