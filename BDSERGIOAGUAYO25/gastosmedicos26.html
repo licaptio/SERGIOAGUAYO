@@ -51,9 +51,8 @@
     }
 .icons{
   text-align:center;
-  font-size:15px;
-  letter-spacing:2px;
   white-space:nowrap;
+  letter-spacing:0; /* important: para que no se separen raro */
 }
 .icons.fotos{ color:#2e7d32; }
 .icons.pdf{ color:#c62828; }
@@ -100,17 +99,22 @@
   }
 }
 .icon-btn{
+  display:inline-block;
   background:none;
   border:none;
   cursor:pointer;
-  font-size:16px;
-  padding:4px;
+  font-size:14px;      /* chiquito */
+  padding:2px 3px;     /* compacto */
+  text-decoration:none;
+  line-height:1;
+  user-select:none;
 }
 
 .icon-btn:hover{
   transform:scale(1.15);
   filter:brightness(1.2);
 }
+
 
   </style>
 </head>
@@ -184,9 +188,9 @@ data.forEach(r => {
     <td class="info">
       ${r.fecha_reclamacion ? new Date(r.fecha_reclamacion).toLocaleDateString("es-MX") : ""}
     </td>
-<td class="icons fotos">${btnFotos(r.fotos, r.uuid)}</td>
-<td class="icons pdf">${btnPDF(r.pdf)}</td>
-<td class="icons xml">${btnXML(r.xml)}</td>
+<td class="icons fotos">${linksFotos(r.fotos)}</td>
+<td class="icons pdf">${linksPDF(r.pdf)}</td>
+<td class="icons xml">${linksXML(r.xml)}</td>
   `;
 
   tbody.appendChild(tr);
@@ -249,36 +253,90 @@ function iconoXML(xml) {
   if (typeof xml === 'string' && xml.trim() === '') return '';
   return '🧾';
 }
-window.verFotos = function(uuid){
-  window.open(`fotos.html?uuid=${uuid}`, '_blank');
+// ====== CONFIG: buckets de Supabase Storage (ajusta a los tuyos) ======
+const BUCKET_FOTOS = null; // ejemplo: "gastos_fotos"
+const BUCKET_DOCS  = null; // ejemplo: "gastos_docs" (pdf y xml juntos) o usa 2 buckets
+
+// ====== Helpers ======
+function normArray(v){
+  if (Array.isArray(v)) return v.filter(Boolean);
+  if (typeof v === 'string' && v.trim() !== '') return [v.trim()];
+  return [];
 }
 
-function btnFotos(fotos, uuid) {
-  if (!Array.isArray(fotos) || fotos.length === 0) return '';
-  return `
-    <button class="icon-btn" onclick="verFotos('${uuid}')">
-      📸${fotos.length > 1 ? `(${fotos.length})` : ''}
-    </button>
-  `;
+function isHttp(url){
+  return typeof url === 'string' && /^https?:\/\//i.test(url);
 }
-function btnPDF(pdfArray) {
-  if (!Array.isArray(pdfArray)) return '';
-  const pdf = pdfArray.find(p => p.toLowerCase().endsWith('.pdf'));
-  if (!pdf) return '';
-  return `
-    <a class="icon-btn" href="${pdf}" target="_blank" title="Abrir PDF">
-      📄
-    </a>
-  `;
+
+// Convierte "path/en/bucket/archivo.pdf" -> URL pública si NO viene como http(s)
+function resolveUrl(file, bucket){
+  if (!file || typeof file !== 'string') return null;
+  if (isHttp(file)) return file;
+
+  // Si no hay bucket, asumimos que ya viene como ruta usable (por si estás sirviendo desde otro lado)
+  if (!bucket) return file;
+
+  // Public URL (bucket debe ser público o con políticas de lectura para anon)
+  const { data } = supabase.storage.from(bucket).getPublicUrl(file);
+  return data?.publicUrl || null;
 }
-function btnXML(xml) {
-  if (!xml || typeof xml !== 'string') return '';
-  if (!xml.toLowerCase().endsWith('.xml')) return '';
-  return `
-    <a class="icon-btn" href="${xml}" target="_blank" title="Abrir XML">
-      🧾
-    </a>
-  `;
+
+// Genera <a> descargable por cada archivo
+function renderDownloadLinks(files, { icon, bucket, onlyExt=null, titlePrefix="Descargar" }){
+  const arr = normArray(files);
+
+  const filtered = onlyExt
+    ? arr.filter(f => typeof f === 'string' && f.toLowerCase().endsWith(onlyExt))
+    : arr;
+
+  if (filtered.length === 0) return '';
+
+  return filtered.map((f, idx) => {
+    const url = resolveUrl(f, bucket);
+    if (!url) return '';
+    const nombre = f.split('/').pop() || f;
+    return `
+      <a class="icon-btn"
+         href="${url}"
+         download
+         target="_blank"
+         rel="noopener"
+         title="${titlePrefix}: ${nombre}">
+        ${icon}
+      </a>
+    `;
+  }).join('');
+}
+
+// ====== Tus 3 columnas ======
+function linksFotos(fotos){
+  // Fotos: 1 icono por foto (no compactar)
+  return renderDownloadLinks(fotos, {
+    icon: "📸",
+    bucket: BUCKET_FOTOS,
+    onlyExt: null,
+    titlePrefix: "Descargar foto"
+  });
+}
+
+function linksPDF(pdfArray){
+  // PDF: tu campo pdf es ARRAY, 1 icono por cada pdf
+  return renderDownloadLinks(pdfArray, {
+    icon: "📄",
+    bucket: BUCKET_DOCS,
+    onlyExt: ".pdf",
+    titlePrefix: "Descargar PDF"
+  });
+}
+
+function linksXML(xmlVal){
+  // XML: soporta string o array, 1 icono por cada xml
+  return renderDownloadLinks(xmlVal, {
+    icon: "🧾",
+    bucket: BUCKET_DOCS,
+    onlyExt: ".xml",
+    titlePrefix: "Descargar XML"
+  });
 }
 
 </script>
