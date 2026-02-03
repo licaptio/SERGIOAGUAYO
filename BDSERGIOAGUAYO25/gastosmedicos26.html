@@ -222,8 +222,24 @@ function linksPDF(pdfArray){
 }
 
 function linksXML(xmlVal){
-  // soporta string o array
-  return renderDownloadLinks(xmlVal, { icon: "🧾", onlyExt: ".xml", titlePrefix: "Descargar XML" });
+  const arr = normArray(xmlVal);
+  const xmls = arr.filter(f => f.toLowerCase().endsWith('.xml'));
+  if (xmls.length === 0) return '';
+
+  return xmls.map(f => {
+    const nombre = f.split('/').pop() || f;
+    const url = resolveUrl(f);
+    if (!url) return '';
+
+    return `
+      <a class="icon-btn"
+         href="#"
+         title="Descargar XML: ${nombre}"
+         onclick="descargarXML('${url}','${nombre}')">
+        🧾
+      </a>
+    `;
+  }).join('');
 }
 
 /* =========================
@@ -289,6 +305,25 @@ const cards = document.getElementById("cards");
   `;
   cards.appendChild(card);
 });
+window.descargarXML = async function(url, filename){
+  try{
+    const res = await fetch(url);
+    const blob = await res.blob();
+
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename || 'archivo.xml';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    URL.revokeObjectURL(a.href);
+  }catch(err){
+    console.error('Error descargando XML:', err);
+    alert('No se pudo descargar el XML');
+  }
+};
+
 </script>
 
 
