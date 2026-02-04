@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
   <style>
     body{
       font-family:'Poppins',sans-serif;
@@ -109,10 +110,13 @@
 <div id="loginBox" style="max-width:360px;margin:40px auto;background:#fff;padding:25px;border-radius:12px;box-shadow:0 6px 15px rgba(0,0,0,.25)">
   <h3 style="text-align:center;margin-bottom:15px">🔐 Acceso</h3>
 
+  <!-- ✅ autocomplete para evitar que el navegador “guarde” tanto -->
   <input id="email" type="email" placeholder="Correo"
+         autocomplete="off"
          style="width:100%;padding:10px;margin-bottom:10px">
 
   <input id="password" type="password" placeholder="Contraseña"
+         autocomplete="new-password"
          style="width:100%;padding:10px;margin-bottom:15px">
 
   <button onclick="login()"
@@ -152,6 +156,42 @@
      ✅ CONFIG
   ========================= */
   const BUCKET = "gastos_medicos_fotos"; // tu bucket real (public)
+
+  /* =========================
+     ✅ NO PERSISTIR SESIÓN (Firebase Auth compat)
+     - Si recargas o cierras pestaña, volverá a pedir login
+  ========================= */
+  async function setNoPersistence(){
+    try{
+      // En firebase compat: auth.setPersistence(firebase.auth.Auth.Persistence.NONE)
+      // Pero como importas auth desde services.js, aquí lo hacemos con auth directamente.
+      // En algunos setups, NONE funciona como string; en otros requiere la constante.
+      // Probamos ambas formas:
+      if (auth?.setPersistence){
+        // intento 1 (string)
+        try{
+          await auth.setPersistence("none");
+          return;
+        }catch(_){}
+
+        // intento 2 (constante global si existe)
+        if (window.firebase?.auth?.Auth?.Persistence?.NONE){
+          await auth.setPersistence(window.firebase.auth.Auth.Persistence.NONE);
+          return;
+        }
+
+        // intento 3 (constante global alternativa)
+        if (window.firebase?.auth?.Auth?.Persistence?.SESSION){
+          // Si NONE no está disponible, SESSION al menos evita que quede “para siempre”
+          await auth.setPersistence(window.firebase.auth.Auth.Persistence.SESSION);
+          return;
+        }
+      }
+    }catch(err){
+      console.warn("No se pudo setear persistencia:", err);
+    }
+  }
+  await setNoPersistence();
 
   /* =========================
      Helpers
@@ -225,7 +265,7 @@
         <a class="icon-btn"
            href="#"
            title="Descargar XML: ${nombre}"
-           onclick="descargarXML('${url}','${nombre}')">
+           onclick="descargarXML('${url}','${nombre}'); return false;">
           🧾
         </a>
       `;
@@ -233,15 +273,58 @@
   }
 
   /* =========================
+     ✅ AUTO-LOGOUT POR INACTIVIDAD (5 min)
+  ========================= */
+  const IDLE_MINUTES = 5;
+  const IDLE_MS = IDLE_MINUTES * 60 * 1000;
+  let idleTimer = null;
+
+  function limpiarLoginInputs(){
+    const emailEl = document.getElementById("email");
+    const passEl  = document.getElementById("password");
+    if (emailEl) emailEl.value = "";
+    if (passEl) passEl.value = "";
+  }
+
+  function resetIdleTimer(){
+    if (!auth.currentUser) return;
+    if (idleTimer) clearTimeout(idleTimer);
+
+    idleTimer = setTimeout(async () => {
+      try{
+        await auth.signOut();
+      }catch(e){
+        console.warn("Error al cerrar sesión por inactividad:", e);
+      }finally{
+        limpiarLoginInputs();
+        alert("Sesión cerrada por inactividad.");
+      }
+    }, IDLE_MS);
+  }
+
+  ["mousemove","mousedown","keydown","touchstart","scroll","click"]
+    .forEach(evt => window.addEventListener(evt, resetIdleTimer, { passive: true }));
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) resetIdleTimer();
+  });
+
+  /* =========================
      LOGIN
   ========================= */
   window.login = async function(){
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+    const emailEl = document.getElementById("email");
+    const passEl  = document.getElementById("password");
+
+    const email = emailEl?.value?.trim() || "";
+    const password = passEl?.value || "";
 
     try{
       await auth.signInWithEmailAndPassword(email, password);
+      // NO limpiamos email al entrar para que no moleste,
+      // pero si quieres: limpiarLoginInputs();
     }catch(e){
+      if (passEl) passEl.value = "";
       alert("Credenciales incorrectas");
     }
   };
@@ -250,10 +333,18 @@
     if(user){
       document.getElementById("loginBox").style.display = "none";
       document.getElementById("app").style.display = "block";
+      resetIdleTimer(); // ✅ arranca / reinicia contador
       cargarDatos();
     }else{
       document.getElementById("loginBox").style.display = "block";
       document.getElementById("app").style.display = "none";
+
+      // ✅ seguridad: limpia inputs al salir
+      limpiarLoginInputs();
+
+      // ✅ apaga timer
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = null;
     }
   });
 
@@ -312,7 +403,7 @@
       card.className = "card-item";
       card.innerHTML = `
         <div class="row"><span class="label">Fecha:</span> ${r.fecha ? new Date(r.fecha).toLocaleDateString("es-MX") : ""}</div>
-        <div class="row uuid"><span class="label">UUID:</span> ${r.uuid}</div>
+        <div class="row uuid"><span class="label">UUID:</span> ${r.uuid ?? ""}</div>
         <div class="row"><span class="label">Razón Social:</span> ${recortarTexto(r.razon_social_emisor ?? "", 30)}</div>
         <div class="row"><span class="label">Factura:</span> ${r.serie ?? ""} - ${r.factura ?? ""}</div>
         <div class="row"><span class="label">Total:</span> ${r.total?.toLocaleString("es-MX",{style:"currency",currency:"MXN"}) ?? ""}</div>
