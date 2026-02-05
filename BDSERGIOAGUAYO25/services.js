@@ -3,8 +3,6 @@
 /* =========================
    🔥 FIREBASE AUTH (compat)
 ========================= */
-import "https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js";
-import "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
