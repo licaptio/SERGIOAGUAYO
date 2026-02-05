@@ -420,6 +420,45 @@ table,
 
     renderTabla(data);
   }
+async function listarPDFsPorUUID(uuid){
+  if (!uuid) return [];
+
+  const { data, error } = await supabase
+    .storage
+    .from(BUCKET)
+    .list(`gastos_medicos/${uuid}/pdf`, {
+      limit: 20,
+      offset: 0
+    });
+
+  if (error) {
+    console.warn("Error listando PDFs:", error);
+    return [];
+  }
+
+  return (data || [])
+    .filter(f => f.name.toLowerCase().endsWith(".pdf"))
+    .map(f => `gastos_medicos/${uuid}/pdf/${f.name}`);
+}
+async function linksPDFPorUUID(uuid){
+  const pdfs = await listarPDFsPorUUID(uuid);
+  if (pdfs.length === 0) return "";
+
+  return pdfs.map((path, i) => {
+    const url = resolveUrl(path);
+    const nombre = path.split("/").pop();
+
+    return `
+      <a class="icon-btn"
+         href="${url}"
+         target="_blank"
+         download
+         title="Descargar PDF ${i + 1}: ${nombre}">
+        📄
+      </a>
+    `;
+  }).join("");
+}
 
   /* =========================
      RENDER
@@ -447,11 +486,17 @@ table,
         <td class="info">${r.gasto_reclamado ? "Sí" : "No"}</td>
         <td class="info">${r.fecha_reclamacion ? new Date(r.fecha_reclamacion).toLocaleDateString("es-MX") : ""}</td>
         <td class="icons fotos">${linksFotos(r.fotos)}</td>
-        <td class="icons pdf">${linksPDF(r.pdf)}</td>
+        <td class="icons pdf" data-uuid="${r.uuid}">Cargando…</td>
         <td class="icons xml">${linksXML(r.xml)}</td>
       `;
 
       tbody.appendChild(tr);
+      const pdfCell = tr.querySelector('.icons.pdf');
+
+linksPDFPorUUID(r.uuid).then(html => {
+  pdfCell.innerHTML = html || "";
+});
+
 
       const card = document.createElement("div");
       card.className = "card-item";
