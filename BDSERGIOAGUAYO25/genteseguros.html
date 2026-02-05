@@ -1,30 +1,29 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title> Gastos Médicos – AUPS</title>
+  <title>Gastos Médicos – AUPS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
   <style>
-body{
-  font-family:'Poppins',sans-serif;
-  padding:20px;
+    body{
+      font-family:'Poppins',sans-serif;
+      padding:20px;
 
-  background:
-    linear-gradient(
-      rgba(228,229,230,0.94),
-      rgba(228,229,230,0.94)
-    ),
-    url("./provsoft-logo.png");
+      background:
+        linear-gradient(
+          rgba(228,229,230,0.94),
+          rgba(228,229,230,0.94)
+        ),
+        url("./provsoft-logo.png");
 
-  background-repeat: no-repeat;
-  background-position: center 160px;
-  background-size: 520px;
-  background-attachment: fixed;
-}
-
+      background-repeat: no-repeat;
+      background-position: center 160px;
+      background-size: 520px;
+      background-attachment: fixed;
+    }
 
     h2{text-align:center;color:#003366;margin-bottom:25px}
     table{
@@ -113,58 +112,53 @@ body{
       transform:scale(1.15);
       filter:brightness(1.2);
     }
-    #loginBox,
-table,
-.card-item{
-  background:rgba(255,255,255,0.95);
-  backdrop-filter: blur(2px);
-}
-@media (min-width: 1024px){
-  body{
-    background-size: 700px;
-    background-position: center 220px;
-  }
-}
-@media (max-width: 768px){
-  body{
-    background-size: 360px;
-    background-position: center 120px;
-  }
-}
-.footer-provsoft{
-  position: fixed;
-  bottom: 10px;
-  left: 0;
-  width: 100%;
-  text-align: center;
 
-  font-size: 12px;
-  letter-spacing: 0.5px;
-  color: #003366;
+    #loginBox, table, .card-item{
+      background:rgba(255,255,255,0.95);
+      backdrop-filter: blur(2px);
+    }
 
-  opacity: 0.75;
-  pointer-events: none; /* no estorba clicks */
-}
+    @media (min-width: 1024px){
+      body{
+        background-size: 700px;
+        background-position: center 220px;
+      }
+    }
+    @media (max-width: 768px){
+      body{
+        background-size: 360px;
+        background-position: center 120px;
+      }
+    }
 
-/* Ajuste en móvil */
-@media (max-width: 768px){
-  .footer-provsoft{
-    font-size: 11px;
-    bottom: 6px;
-  }
-}
-
+    .footer-provsoft{
+      position: fixed;
+      bottom: 10px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      color: #003366;
+      opacity: 0.75;
+      pointer-events: none;
+    }
+    @media (max-width: 768px){
+      .footer-provsoft{
+        font-size: 11px;
+        bottom: 6px;
+      }
+    }
   </style>
 </head>
 
 <body>
 
-<h2>🩺 Gastos Médicos – AUPS </h2>
+<h2>🩺 Gastos Médicos – AUPS</h2>
 
 <div id="loginBox" style="max-width:360px;margin:40px auto;background:#fff;padding:25px;border-radius:12px;box-shadow:0 6px 15px rgba(0,0,0,.25)">
-  <h3 style="text-align:center;margin-bottom:15px"> Acceso PROVSOFT </h3>
+  <h3 style="text-align:center;margin-bottom:15px">Acceso PROVSOFT</h3>
 
-  <!-- ✅ autocomplete para evitar que el navegador “guarde” tanto -->
   <input id="email" type="email" placeholder="Correo"
          autocomplete="off"
          style="width:100%;padding:10px;margin-bottom:10px">
@@ -199,348 +193,12 @@ table,
     <tbody id="tbody"></tbody>
   </table>
 
-  <!-- 📱 CONTENEDOR PARA CELULAR -->
   <div id="cards" class="card-list"></div>
 </div>
 
+<!-- ✅ Firebase compat (global) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
-<script type="module">
-  import { auth, supabase } from "./services.js";
-
-  /* =========================
-     ✅ CONFIG
-  ========================= */
-  const BUCKET = "gastos_medicos_fotos"; // tu bucket real (public)
-
-  /* =========================
-     ✅ NO PERSISTIR SESIÓN (Firebase Auth compat)
-     - Si recargas o cierras pestaña, volverá a pedir login
-  ========================= */
-  async function setNoPersistence(){
-    try{
-      // En firebase compat: auth.setPersistence(firebase.auth.Auth.Persistence.NONE)
-      // Pero como importas auth desde services.js, aquí lo hacemos con auth directamente.
-      // En algunos setups, NONE funciona como string; en otros requiere la constante.
-      // Probamos ambas formas:
-      if (auth?.setPersistence){
-        // intento 1 (string)
-        try{
-          await auth.setPersistence("none");
-          return;
-        }catch(_){}
-
-        // intento 2 (constante global si existe)
-        if (window.firebase?.auth?.Auth?.Persistence?.NONE){
-          await auth.setPersistence(window.firebase.auth.Auth.Persistence.NONE);
-          return;
-        }
-
-        // intento 3 (constante global alternativa)
-        if (window.firebase?.auth?.Auth?.Persistence?.SESSION){
-          // Si NONE no está disponible, SESSION al menos evita que quede “para siempre”
-          await auth.setPersistence(window.firebase.auth.Auth.Persistence.SESSION);
-          return;
-        }
-      }
-    }catch(err){
-      console.warn("No se pudo setear persistencia:", err);
-    }
-  }
-  await setNoPersistence();
-
-  /* =========================
-     Helpers
-  ========================= */
-  function normArray(v){
-    if (Array.isArray(v)) return v.filter(x => typeof x === "string" && x.trim() !== "");
-    if (typeof v === "string" && v.trim() !== "") return [v.trim()];
-    return [];
-  }
-
-  function recortarTexto(texto, maxLength = 30) {
-    if (!texto || typeof texto !== 'string') return '';
-    if (texto.length <= maxLength) return texto;
-    return texto.substring(0, maxLength - 3) + '...';
-  }
-
-  function isHttp(url){
-    return typeof url === "string" && /^https?:\/\//i.test(url);
-  }
-
-  function resolveUrl(filePath){
-    if (!filePath || typeof filePath !== "string") return null;
-    if (isHttp(filePath)) return filePath;
-
-    const { data } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
-    return data?.publicUrl || null;
-  }
-
-  function renderDownloadLinks(files, { icon, onlyExt=null, titlePrefix="Descargar" }){
-    const arr = normArray(files);
-    const filtered = onlyExt ? arr.filter(f => f.toLowerCase().endsWith(onlyExt)) : arr;
-    if (filtered.length === 0) return "";
-
-    return filtered.map((f) => {
-      const url = resolveUrl(f);
-      if (!url) return "";
-      const nombre = f.split("/").pop() || f;
-
-      return `
-        <a class="icon-btn"
-           href="${url}"
-           download
-           target="_blank"
-           rel="noopener"
-           title="${titlePrefix}: ${nombre}">
-          ${icon}
-        </a>
-      `;
-    }).join("");
-  }
-
-  function linksFotos(fotos){
-    return renderDownloadLinks(fotos, { icon: "📸", onlyExt: null, titlePrefix: "Descargar foto" });
-  }
-
-  function linksPDF(pdfArray){
-    return renderDownloadLinks(pdfArray, { icon: "📄", onlyExt: ".pdf", titlePrefix: "Descargar PDF" });
-  }
-
-  function linksXML(xmlVal){
-    const arr = normArray(xmlVal);
-    const xmls = arr.filter(f => f.toLowerCase().endsWith('.xml'));
-    if (xmls.length === 0) return '';
-
-    return xmls.map(f => {
-      const nombre = f.split('/').pop() || f;
-      const url = resolveUrl(f);
-      if (!url) return '';
-
-      return `
-        <a class="icon-btn"
-           href="#"
-           title="Descargar XML: ${nombre}"
-           onclick="descargarXML('${url}','${nombre}'); return false;">
-          🧾
-        </a>
-      `;
-    }).join('');
-  }
-
-  /* =========================
-     ✅ AUTO-LOGOUT POR INACTIVIDAD (5 min)
-  ========================= */
-  const IDLE_MINUTES = 3;
-  const IDLE_MS = IDLE_MINUTES * 60 * 1000;
-  let idleTimer = null;
-
-  function limpiarLoginInputs(){
-    const emailEl = document.getElementById("email");
-    const passEl  = document.getElementById("password");
-    if (emailEl) emailEl.value = "";
-    if (passEl) passEl.value = "";
-  }
-
-  function resetIdleTimer(){
-    if (!auth.currentUser) return;
-    if (idleTimer) clearTimeout(idleTimer);
-
-    idleTimer = setTimeout(async () => {
-      try{
-        await auth.signOut();
-      }catch(e){
-        console.warn("Error al cerrar sesión por inactividad:", e);
-      }finally{
-        limpiarLoginInputs();
-        console.info("Sesión cerrada por inactividad");
-      }
-    }, IDLE_MS);
-  }
-
-  ["mousemove","mousedown","keydown","touchstart","scroll","click"]
-    .forEach(evt => window.addEventListener(evt, resetIdleTimer, { passive: true }));
-
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) resetIdleTimer();
-  });
-
-  /* =========================
-     LOGIN
-  ========================= */
-  window.login = async function(){
-    const emailEl = document.getElementById("email");
-    const passEl  = document.getElementById("password");
-
-    const email = emailEl?.value?.trim() || "";
-    const password = passEl?.value || "";
-
-    try{
-      await auth.signInWithEmailAndPassword(email, password);
-      // NO limpiamos email al entrar para que no moleste,
-      // pero si quieres: limpiarLoginInputs();
-    }catch(e){
-      if (passEl) passEl.value = "";
-      alert("Credenciales incorrectas");
-    }
-  };
-
-  auth.onAuthStateChanged(user => {
-    if(user){
-      document.getElementById("loginBox").style.display = "none";
-      document.getElementById("app").style.display = "block";
-      resetIdleTimer(); // ✅ arranca / reinicia contador
-      cargarDatos();
-    }else{
-      document.getElementById("loginBox").style.display = "block";
-      document.getElementById("app").style.display = "none";
-
-      // ✅ seguridad: limpia inputs al salir
-      limpiarLoginInputs();
-
-      // ✅ apaga timer
-      if (idleTimer) clearTimeout(idleTimer);
-      idleTimer = null;
-    }
-  });
-
-  /* =========================
-     CARGA DATA
-  ========================= */
-  async function cargarDatos(){
-    const { data, error } = await supabase
-      .from("xml_inge_sergio_e")
-      .select("*")
-      .eq("es_gasto_medico", true)
-      .order("fecha", { ascending: true });
-
-    if(error){
-      alert("Error al cargar datos");
-      console.error(error);
-      return;
-    }
-
-    renderTabla(data);
-  }
-async function listarPDFsPorUUID(uuid){
-  if (!uuid) return [];
-
-  const { data, error } = await supabase
-    .storage
-    .from(BUCKET)
-    .list(`gastos_medicos/${uuid}/pdf`, {
-      limit: 20,
-      offset: 0
-    });
-
-  if (error) {
-    console.warn("Error listando PDFs:", error);
-    return [];
-  }
-
-  return (data || [])
-    .filter(f => f.name.toLowerCase().endsWith(".pdf"))
-    .map(f => `gastos_medicos/${uuid}/pdf/${f.name}`);
-}
-async function linksPDFPorUUID(uuid){
-  const pdfs = await listarPDFsPorUUID(uuid);
-  if (pdfs.length === 0) return "";
-
-  return pdfs.map((path, i) => {
-    const url = resolveUrl(path);
-    const nombre = path.split("/").pop();
-
-    return `
-      <a class="icon-btn"
-         href="${url}"
-         target="_blank"
-         download
-         title="Descargar PDF ${i + 1}: ${nombre}">
-        📄
-      </a>
-    `;
-  }).join("");
-}
-
-  /* =========================
-     RENDER
-  ========================= */
-  function renderTabla(data){
-    const tbody = document.getElementById("tbody");
-    tbody.innerHTML = "";
-
-    const cards = document.getElementById("cards");
-    cards.innerHTML = "";
-
-    (data || []).forEach(r => {
-      const tr = document.createElement("tr");
-      if (r.gasto_reclamado) tr.style.background = "#d7f8d7";
-
-      const uuidCorto = r.uuid ? r.uuid.substring(0, 18) + "…" : "";
-
-      tr.innerHTML = `
-        <td>${r.fecha ? new Date(r.fecha).toLocaleDateString("es-MX") : ""}</td>
-        <td class="uuid">${uuidCorto}</td>
-        <td>${recortarTexto(r.razon_social_emisor ?? "", 30)}</td>
-        <td>${r.serie ?? ""} - ${r.factura ?? ""}</td>
-        <td>${r.total?.toLocaleString("es-MX",{style:"currency",currency:"MXN"}) ?? ""}</td>
-        <td class="info">${r.especialidad ?? ""}</td>
-        <td class="info">${r.gasto_reclamado ? "Sí" : "No"}</td>
-        <td class="info">${r.fecha_reclamacion ? new Date(r.fecha_reclamacion).toLocaleDateString("es-MX") : ""}</td>
-        <td class="icons fotos">${linksFotos(r.fotos)}</td>
-        <td class="icons pdf" data-uuid="${r.uuid}">Cargando…</td>
-        <td class="icons xml">${linksXML(r.xml)}</td>
-      `;
-
-      tbody.appendChild(tr);
-      const pdfCell = tr.querySelector('.icons.pdf');
-
-linksPDFPorUUID(r.uuid).then(html => {
-  pdfCell.innerHTML = html || "";
-});
-
-
-      const card = document.createElement("div");
-      card.className = "card-item";
-      card.innerHTML = `
-        <div class="row"><span class="label">Fecha:</span> ${r.fecha ? new Date(r.fecha).toLocaleDateString("es-MX") : ""}</div>
-        <div class="row uuid"><span class="label">UUID:</span> ${r.uuid ?? ""}</div>
-        <div class="row"><span class="label">Razón Social:</span> ${recortarTexto(r.razon_social_emisor ?? "", 30)}</div>
-        <div class="row"><span class="label">Factura:</span> ${r.serie ?? ""} - ${r.factura ?? ""}</div>
-        <div class="row"><span class="label">Total:</span> ${r.total?.toLocaleString("es-MX",{style:"currency",currency:"MXN"}) ?? ""}</div>
-        <div class="row"><span class="label">Especialidad:</span> ${r.especialidad ?? ""}</div>
-        <div class="row"><span class="label">Reclamado:</span> ${r.gasto_reclamado ? "Sí" : "No"}</div>
-      `;
-      cards.appendChild(card);
-    });
-  }
-
-  /* =========================
-     DESCARGA XML
-  ========================= */
-  window.descargarXML = async function(url, filename){
-    try{
-      const res = await fetch(url);
-      const blob = await res.blob();
-
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = filename || 'archivo.xml';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      URL.revokeObjectURL(a.href);
-    }catch(err){
-      console.error('Error descargando XML:', err);
-      alert('No se pudo descargar el XML');
-    }
-  };
-</script>
-<footer class="footer-provsoft">
-  © 2026 · Powered by <strong>PROVSOFT</strong>
-</footer>
-
-</body>
-</html>
+<!-- ✅ Supabase UMD (global) -->
+<script src="https://cdn.jsdelivr.net/npm/@sup
