@@ -329,7 +329,7 @@ table,
   /* =========================
      ✅ AUTO-LOGOUT POR INACTIVIDAD (5 min)
   ========================= */
-  const IDLE_MINUTES = 5;
+  const IDLE_MINUTES = 3;
   const IDLE_MS = IDLE_MINUTES * 60 * 1000;
   let idleTimer = null;
 
@@ -351,7 +351,7 @@ table,
         console.warn("Error al cerrar sesión por inactividad:", e);
       }finally{
         limpiarLoginInputs();
-        alert("Sesión cerrada por inactividad.");
+        console.info("Sesión cerrada por inactividad");
       }
     }, IDLE_MS);
   }
