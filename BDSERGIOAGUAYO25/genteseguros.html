@@ -211,7 +211,7 @@
   // Dependencias globales
   // =========================
   const auth = window.auth;
-  const supabase = window.sb;
+  const sb = window.sb;
 
   /* =========================
      ✅ CONFIG
@@ -262,7 +262,9 @@
     if (!filePath || typeof filePath !== "string") return null;
     if (isHttp(filePath)) return filePath;
 
-    const { data } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
+const { data } = sb.storage
+  .from(BUCKET)
+  .getPublicUrl(filePath);
     return data && data.publicUrl ? data.publicUrl : null;
   }
 
@@ -391,9 +393,9 @@
      CARGA DATA
   ========================= */
   async function cargarDatos(){
-    const resp = await supabase
-      .from("xml_inge_sergio_e")
-      .select("*")
+const resp = await sb
+  .from("xml_inge_sergio_e")
+  .select("*")
       .eq("es_gasto_medico", true)
       .order("fecha", { ascending: true });
 
@@ -412,9 +414,9 @@
   async function listarPDFsPorUUID(uuid){
     if (!uuid) return [];
 
-    const { data, error } = await supabase
-      .storage
-      .from(BUCKET)
+const { data, error } = await sb
+  .storage
+  .from(BUCKET)
       .list(`gastos_medicos/${uuid}/pdf`, { limit: 20, offset: 0 });
 
     if (error) {
