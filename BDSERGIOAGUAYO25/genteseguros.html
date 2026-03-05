@@ -25,25 +25,36 @@
       background-attachment: fixed;
     }
 
-    h2{text-align:center;color:#003366;margin-bottom:25px}
+    h2{ text-align:center; color:#003366; margin-bottom:25px; }
+
+    /* ✅ CONTENEDOR SCROLL (en vez de display:block en la tabla) */
+    .table-container{
+      width:100%;
+      max-height:80vh;
+      overflow:auto;              /* scroll vertical + horizontal si hace falta */
+      border-radius:10px;
+      box-shadow:0 3px 8px rgba(0,0,0,.15);
+      background:rgba(255,255,255,0.95);
+      backdrop-filter: blur(2px);
+    }
+
+    /* ✅ TABLA NORMAL */
     table{
       width:100%;
       border-collapse:collapse;
       background:#fff;
-      border-radius:10px;
-      overflow:hidden;
-      box-shadow:0 3px 8px rgba(0,0,0,.15);
-      display:block;
-      max-height:80vh;
-      overflow-y:auto;
+      min-width:1100px;           /* evita que se “apriete” */
     }
+
     th,td{
       padding:8px 10px;
       border-bottom:1px solid #ddd;
       font-size:13px;
       text-align:left;
       white-space:nowrap;
+      background:transparent;
     }
+
     th{
       background:#003366;
       color:#fff;
@@ -51,12 +62,15 @@
       top:0;
       z-index:2;
     }
-    tr:hover{background:#f3f7fb}
+
+    tr:hover{ background:#f3f7fb; }
+
     .uuid{
       font-weight:600;
       color:#0c6cbd;
       font-family:monospace;
     }
+
     .info{ color:#555; }
 
     .icons{
@@ -68,19 +82,29 @@
     .icons.pdf{ color:#c62828; }
     .icons.xml{ color:#1565c0; }
 
+    /* ✅ scrollbars pro (opcional) */
+    .table-container::-webkit-scrollbar{ height:10px; width:10px; }
+    .table-container::-webkit-scrollbar-thumb{
+      background:#003366;
+      border-radius:6px;
+    }
+
     /* 🖥️ OCULTAR CARDS EN PC */
     .card-list{ display:none; }
 
     /* 📱 CARDS EN CELULAR */
     @media (max-width: 768px){
+      .table-container{ display:none; }
       table, thead{ display:none; }
+
       .card-list{
         display:flex;
         flex-direction:column;
         gap:12px;
       }
       .card-item{
-        background:#fff;
+        background:rgba(255,255,255,0.95);
+        backdrop-filter: blur(2px);
         border-radius:12px;
         padding:14px;
         box-shadow:0 3px 8px rgba(0,0,0,.15);
@@ -113,7 +137,7 @@
       filter:brightness(1.2);
     }
 
-    #loginBox, table, .card-item{
+    #loginBox, .card-item{
       background:rgba(255,255,255,0.95);
       backdrop-filter: blur(2px);
     }
@@ -174,24 +198,28 @@
 </div>
 
 <div id="app" style="display:none">
-  <table>
-    <thead>
-      <tr>
-        <th>Fecha</th>
-        <th>UUID</th>
-        <th>Razón Social</th>
-        <th>Serie / Factura</th>
-        <th>Total</th>
-        <th>Especialidad</th>
-        <th>Gasto Reclamado</th>
-        <th>Fecha Reclamación</th>
-        <th>Fotos</th>
-        <th>PDF</th>
-        <th>XML</th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-  </table>
+
+  <!-- ✅ WRAPPER NUEVO -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>UUID</th>
+          <th>Razón Social</th>
+          <th>Serie / Factura</th>
+          <th>Total</th>
+          <th>Especialidad</th>
+          <th>Gasto Reclamado</th>
+          <th>Fecha Reclamación</th>
+          <th>Fotos</th>
+          <th>PDF</th>
+          <th>XML</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
 
   <div id="cards" class="card-list"></div>
 </div>
@@ -262,9 +290,10 @@
     if (!filePath || typeof filePath !== "string") return null;
     if (isHttp(filePath)) return filePath;
 
-const { data } = sb.storage
-  .from(BUCKET)
-  .getPublicUrl(filePath);
+    const { data } = sb.storage
+      .from(BUCKET)
+      .getPublicUrl(filePath);
+
     return data && data.publicUrl ? data.publicUrl : null;
   }
 
@@ -393,9 +422,9 @@ const { data } = sb.storage
      CARGA DATA
   ========================= */
   async function cargarDatos(){
-const resp = await sb
-  .from("xml_inge_sergio_e")
-  .select("*")
+    const resp = await sb
+      .from("xml_inge_sergio_e")
+      .select("*")
       .eq("es_gasto_medico", true)
       .order("fecha", { ascending: true });
 
@@ -414,9 +443,9 @@ const resp = await sb
   async function listarPDFsPorUUID(uuid){
     if (!uuid) return [];
 
-const { data, error } = await sb
-  .storage
-  .from(BUCKET)
+    const { data, error } = await sb
+      .storage
+      .from(BUCKET)
       .list(`gastos_medicos/${uuid}/pdf`, { limit: 20, offset: 0 });
 
     if (error) {
@@ -530,4 +559,3 @@ const { data, error } = await sb
 
 </body>
 </html>
-
